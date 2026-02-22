@@ -8,6 +8,8 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
 
+🌐 [Português (BR)](README.pt-BR.md)
+
 ---
 
 ## ✨ What Can You Do With It?
@@ -195,16 +197,20 @@ If you have a server with [EasyPanel](https://easypanel.io), you can deploy YouT
 
 - Inside the project, click **+ New Service** → **Postgres**
 - Keep the default settings (EasyPanel creates the database automatically)
-- Copy the **internal connection URL**, it looks like:
-  ```
-  postgresql://postgres:PASSWORD@youtube-manager_postgres:5432/youtube-manager
-  ```
+- Copy the **internal connection URL** — you'll need it in step 4
 
 ### 3. Add the App
 
 - Click **+ New Service** → **App**
-- Go to the **General** tab and set:
-  - **Image:** `mosqueiro/yt-manager:latest`
+- Go to the **Build** tab and select **GitHub**
+- Fill in the fields:
+  | Field | Value |
+  |---|---|
+  | Owner | `mosqueiro` |
+  | Repository | `youtube-manager` |
+  | Branch | `main` |
+  | Path | `/` |
+- EasyPanel will detect the `Dockerfile` and build the image automatically
 
 ### 4. Configure Environment Variables
 
@@ -222,10 +228,10 @@ If you have a server with [EasyPanel](https://easypanel.io), you can deploy YouT
 
 ### 6. Deploy
 
-- Click **Deploy** — EasyPanel will pull the image, start the container, and connect it to PostgreSQL
+- Click **Deploy** — EasyPanel will clone the repo, build the image, and connect it to PostgreSQL
 - Open the URL and you're ready! 🎉
 
-> 💡 EasyPanel handles SSL, restarts, and logs automatically.
+> 💡 EasyPanel handles SSL, restarts, and auto-deploy on new commits.
 
 ---
 
