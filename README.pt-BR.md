@@ -53,34 +53,60 @@ Navegação completa com sidebar no desktop, menu hambúrguer no mobile. O calen
 
 Antes de começar, certifique-se de ter instalado:
 
+- [**Node.js**](https://nodejs.org/) (v18 ou superior)
 - [**Docker Desktop**](https://www.docker.com/products/docker-desktop/) (obrigatório)
-- Uma **chave da YouTube API** (grátis — veja abaixo como conseguir)
+- **Credenciais Google OAuth** (grátis — veja abaixo como conseguir)
 
 ---
 
-### 🔑 Como Conseguir uma Chave da YouTube API (Grátis)
+### 🔑 Como Configurar o Google OAuth (Grátis)
 
-Você precisa de uma chave da YouTube API para o app buscar dados de canais e vídeos. É grátis e leva uns 2 minutos:
+Você precisa de um Client ID e Secret do Google OAuth para o app buscar dados dos seus canais, incluindo **vídeos agendados e privados**. É grátis e leva uns 5 minutos:
+
+#### 1. Criar um Projeto no Google Cloud
 
 1. Acesse o **[Google Cloud Console](https://console.cloud.google.com/)**
 2. Faça login com sua conta Google
 3. Clique em **"Selecionar um projeto"** no topo → depois **"Novo Projeto"**
 4. Dê qualquer nome (ex: "YouTube Manager") e clique em **Criar**
-5. Espere alguns segundos e certifique-se que o novo projeto está selecionado no topo
-6. No menu lateral, vá em **"APIs e Serviços"** → **"Biblioteca"**
-7. Pesquise por **"YouTube Data API v3"** e clique nela
-8. Clique no botão azul **"Ativar"**
-9. Agora vá em **"APIs e Serviços"** → **"Credenciais"** (no menu lateral)
-10. Clique em **"+ Criar Credenciais"** → **"Chave de API"**
-11. Copie a chave que aparecer — essa é sua `YOUTUBE_API_KEY`! 🎉
+5. Espere alguns segundos e certifique-se que o novo projeto está selecionado
+
+#### 2. Ativar a YouTube API
+
+1. No menu lateral, vá em **"APIs e Serviços"** → **"Biblioteca"**
+2. Pesquise por **"YouTube Data API v3"** e clique nela
+3. Clique no botão azul **"Ativar"**
+
+#### 3. Configurar a Tela de Consentimento OAuth
+
+1. Vá em **"APIs e Serviços"** → **"Tela de consentimento OAuth"** (ou pesquise "Google Auth Platform")
+2. Vá em **"Branding"** e preencha o nome do app e seu email
+3. Vá em **"Audience"** → defina como **External** e deixe no modo **Testing** (não precisa verificar)
+4. Vá em **"Data Access"** → clique em **"Add or Remove Scopes"** → adicione `youtube.readonly` → Salvar
+5. Volte em **"Audience"** → em **"Test users"**, adicione seu email do Google
+
+#### 4. Criar Credenciais OAuth
+
+1. Vá em **"Clients"** (no menu lateral do Google Auth Platform)
+2. Clique em **"+ Create Client"**
+3. Tipo de aplicativo: **Web application**
+4. Nome: qualquer um (ex: "YT Manager")
+5. Em **"Authorized redirect URIs"**, clique em **"Add URI"** e coloque:
+   ```
+   http://localhost:3000/api/auth/callback
+   ```
+6. Clique em **Create**
+7. Copie o **Client ID** e o **Client Secret** — você vai precisar deles! 🎉
 
 > 💡 O plano gratuito dá **10.000 unidades/dia**, mais que suficiente. Cada sync gasta cerca de 3-5 unidades por canal.
+
+> 💡 Se você tem múltiplos canais do YouTube (contas de marca), pode renomeá-los em [myaccount.google.com/brandaccounts](https://myaccount.google.com/brandaccounts) para facilitar a identificação durante o login OAuth.
 
 ---
 
 ### 📦 Instalação Rápida (Recomendado)
 
-Execute **um único comando** — ele vai pedir sua chave da API, baixar tudo e iniciar o app automaticamente.
+Execute **um único comando** — ele vai pedir suas credenciais OAuth, baixar tudo e iniciar o app automaticamente.
 
 #### 🍎 macOS / 🐧 Linux
 
@@ -102,7 +128,7 @@ curl -fsSL https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/inst
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/install/install.bat" -OutFile install.bat; .\install.bat
 ```
 
-> O instalador vai: pedir sua chave da API → criar a pasta do projeto → baixar as imagens Docker → iniciar o PostgreSQL + o app → abrir **http://localhost:3000** no seu navegador. Pronto! 🎉
+> O instalador vai: pedir suas credenciais OAuth → criar a pasta do projeto → baixar as imagens Docker → iniciar o PostgreSQL + o app → abrir **http://localhost:3000** no seu navegador. Pronto! 🎉
 
 ---
 
@@ -129,11 +155,15 @@ npm install
 cp .env.example .env.local
 ```
 
-Abra o `.env.local` e cole sua chave da YouTube API:
+Abra o `.env.local` e preencha suas credenciais Google OAuth:
 
 ```env
-YOUTUBE_API_KEY=cole_sua_chave_aqui
 DATABASE_URL=postgresql://postgres:postgres@localhost:5435/youtube_manager
+
+# Google OAuth (do passo 4 acima)
+GOOGLE_CLIENT_ID=cole_seu_client_id_aqui
+GOOGLE_CLIENT_SECRET=cole_seu_client_secret_aqui
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback
 ```
 
 **4. Inicie o banco de dados**
@@ -164,6 +194,17 @@ npm run dev
    - Handle (ex: `@MrBeast`)
    - ID do canal (ex: `UCX6OQ3DkcsbYNE6H8uQQuVA`)
 3. Clique em **Add** — o app busca automaticamente o nome, avatar e informações do canal
+
+### 🔗 Conectando o Google (por canal)
+
+Cada canal tem um botão **"Conectar com Google"**. Isso permite que o app veja seus **vídeos agendados e privados**:
+
+1. Em **Settings** ou **Channels**, clique em **"Connect with Google"** no card do canal
+2. O Google vai pedir para escolher uma conta e um canal (conta de marca) — escolha o correspondente
+3. Autorize o app — o token é salvo automaticamente
+4. No próximo **Sync**, os vídeos agendados aparecem no calendário com um badge amarelo "Agendado"
+
+> Você precisa conectar cada canal separadamente, pois cada canal do YouTube pode pertencer a uma conta de marca diferente. Se o token expirar (após 7 dias no modo Testing), basta clicar em "Reconectar".
 
 ### 🔄 Sincronizando Vídeos
 
@@ -228,7 +269,9 @@ Se você tem um servidor com [EasyPanel](https://easypanel.io), pode fazer o dep
   | Variável | Valor |
   |---|---|
   | `DATABASE_URL` | A URL de conexão do PostgreSQL do passo 2 |
-  | `YOUTUBE_API_KEY` | Sua chave da YouTube API |
+  | `GOOGLE_CLIENT_ID` | Seu OAuth Client ID |
+  | `GOOGLE_CLIENT_SECRET` | Seu OAuth Client Secret |
+  | `GOOGLE_REDIRECT_URI` | `https://seudominio.com/api/auth/callback` |
 
 ### 5. Configure o Domínio
 
@@ -275,11 +318,14 @@ Seus dados são preservados — não precisa sincronizar de novo! 🎉
 
 ## ❓ FAQ
 
-**P: A chave da YouTube API é grátis?**
+**P: O Google OAuth é grátis?**
 Sim! O Google dá 10.000 unidades gratuitas por dia. Cada sync gasta cerca de 3-5 unidades por canal, então você precisaria sincronizar centenas de canais diariamente para atingir o limite.
 
 **P: O app publica ou modifica algo no YouTube?**
-Não. É completamente **somente leitura**. Ele só busca dados públicos (títulos, thumbnails, estatísticas). Não pode publicar, excluir ou modificar nada na sua conta do YouTube.
+Não. É completamente **somente leitura**. Ele usa o scope `youtube.readonly` — só pode ler dados. Não pode publicar, excluir ou modificar nada na sua conta do YouTube.
+
+**P: Consigo ver vídeos agendados/privados?**
+Sim! Clique em **"Connect with Google"** no card de cada canal. Uma vez conectado, o app consegue ver vídeos agendados e mostra no calendário com um badge amarelo "Agendado".
 
 **P: Onde meus dados são armazenados?**
 Tudo é armazenado em um **banco PostgreSQL local** rodando no Docker na sua máquina. Nada é enviado para servidores externos (exceto as chamadas à API do YouTube durante o sync).
@@ -288,7 +334,10 @@ Tudo é armazenado em um **banco PostgreSQL local** rodando no Docker na sua má
 Os últimos **50 vídeos** por canal a cada sync.
 
 **P: Posso adicionar qualquer canal do YouTube?**
-Sim, qualquer canal público — seu ou de qualquer outra pessoa.
+Sim, qualquer canal público — seu ou de qualquer outra pessoa. Para ver vídeos agendados, você precisa conectar via Google e ser dono do canal.
+
+**P: O token OAuth expirou, o que faço?**
+No modo Testing, os tokens do Google expiram após 7 dias. Basta clicar em **"Reconectar"** no card do canal em Settings para re-autorizar.
 
 ---
 

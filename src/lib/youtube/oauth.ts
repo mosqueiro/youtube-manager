@@ -34,16 +34,37 @@ export async function exchangeCodeForTokens(code: string) {
   return tokens;
 }
 
+/** Get an authenticated client for a specific channel */
 export async function getAuthenticatedClient(channelId: string) {
   const client = getOAuth2Client();
   if (!client) return null;
 
-  // Look up refresh token for this specific channel
   let refreshToken: string | undefined;
   try {
     const { rows } = await pool.query(
       "SELECT value FROM settings WHERE key = $1",
       [`google_refresh_token:${channelId}`]
+    );
+    if (rows.length > 0) refreshToken = rows[0].value;
+  } catch {
+    // settings table may not exist yet
+  }
+
+  if (!refreshToken) return null;
+
+  client.setCredentials({ refresh_token: refreshToken });
+  return client;
+}
+
+/** Get any available authenticated client (uses the first token found) */
+export async function getAnyAuthenticatedClient() {
+  const client = getOAuth2Client();
+  if (!client) return null;
+
+  let refreshToken: string | undefined;
+  try {
+    const { rows } = await pool.query(
+      "SELECT value FROM settings WHERE key LIKE 'google_refresh_token:%' LIMIT 1"
     );
     if (rows.length > 0) refreshToken = rows[0].value;
   } catch {

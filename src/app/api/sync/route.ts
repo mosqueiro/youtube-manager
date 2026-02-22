@@ -96,6 +96,15 @@ export async function POST(request: Request) {
           if (res.rows[0]?.is_new) newCount++;
         }
 
+        // Remove videos that no longer exist on YouTube
+        if (videos.length > 0) {
+          const fetchedIds = videos.map((v) => v.id);
+          await pool.query(
+            `DELETE FROM videos WHERE channel_id = $1 AND id != ALL($2::text[])`,
+            [channel.id, fetchedIds]
+          );
+        }
+
         // Download channel avatar locally (fallback to remote URL on failure)
         const localAvatar = await downloadImage(
           info.avatar_url,

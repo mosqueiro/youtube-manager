@@ -1,4 +1,4 @@
-import { youtubeGet, youtubeGetAuth } from "./client";
+import { youtubeGet } from "./client";
 import {
   YouTubePlaylistItemsResponse,
   YouTubeVideoDetailsResponse,
@@ -9,38 +9,26 @@ export async function fetchChannelVideos(
   maxResults: number = 50,
   channelId?: string
 ) {
-  // Try OAuth first (can see scheduled/private videos), fall back to API key
-  const playlistRes =
-    (channelId
-      ? await youtubeGetAuth<YouTubePlaylistItemsResponse>(
-          "playlistItems",
-          {
-            part: "snippet",
-            playlistId: uploadsPlaylistId,
-            maxResults: String(maxResults),
-          },
-          channelId
-        )
-      : null) ??
-    (await youtubeGet<YouTubePlaylistItemsResponse>("playlistItems", {
+  const playlistRes = await youtubeGet<YouTubePlaylistItemsResponse>(
+    "playlistItems",
+    {
       part: "snippet",
       playlistId: uploadsPlaylistId,
       maxResults: String(maxResults),
-    }));
+    },
+    channelId
+  );
 
   if (!playlistRes.items || playlistRes.items.length === 0) {
     return [];
   }
 
-  // Get video IDs
   const videoIds = playlistRes.items.map(
     (item) => item.snippet.resourceId.videoId
   );
 
-  // Fetch full video details (snippet + stats + duration)
   const details = await fetchVideoDetails(videoIds, channelId);
 
-  // Build from videos.list data (accurate publishedAt)
   return videoIds
     .map((videoId) => {
       const detail = details.get(videoId);
@@ -79,26 +67,17 @@ async function fetchVideoDetails(videoIds: string[], channelId?: string) {
     }
   >();
 
-  // Process in batches of 50
   for (let i = 0; i < videoIds.length; i += 50) {
     const batch = videoIds.slice(i, i + 50);
 
-    // Try OAuth first (returns status.publishAt for scheduled videos)
-    const res =
-      (channelId
-        ? await youtubeGetAuth<YouTubeVideoDetailsResponse>(
-            "videos",
-            {
-              part: "snippet,contentDetails,statistics,status",
-              id: batch.join(","),
-            },
-            channelId
-          )
-        : null) ??
-      (await youtubeGet<YouTubeVideoDetailsResponse>("videos", {
+    const res = await youtubeGet<YouTubeVideoDetailsResponse>(
+      "videos",
+      {
         part: "snippet,contentDetails,statistics,status",
         id: batch.join(","),
-      }));
+      },
+      channelId
+    );
 
     for (const item of res.items) {
       const thumbs = item.snippet.thumbnails;

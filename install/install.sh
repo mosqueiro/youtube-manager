@@ -92,20 +92,26 @@ fi
 
 echo "  ✔  Docker is ready"
 
-# ── 2. Ask for YouTube API Key ───────────────
+# ── 2. Ask for Google OAuth credentials ──────
 echo ""
-echo "  You need a YouTube API Key from Google Cloud Console."
-echo "  Guide: https://console.cloud.google.com/apis/credentials"
+echo "  You need Google OAuth credentials from Google Cloud Console."
+echo "  Follow the guide in the README to create them."
+echo "  https://github.com/mosqueiro/youtube-manager#-how-to-set-up-google-oauth-free"
 echo ""
-read -rp "  Enter your YouTube API Key: " API_KEY
-
-if [ -z "$API_KEY" ]; then
-  echo ""
-  echo "  ✖  API Key cannot be empty."
+read -rp "  Enter your Google OAuth Client ID: " CLIENT_ID
+if [ -z "$CLIENT_ID" ]; then
+  echo "  ✖  Client ID cannot be empty."
   exit 1
 fi
 
-echo "  ✔  API Key received"
+echo ""
+read -rp "  Enter your Google OAuth Client Secret: " CLIENT_SECRET
+if [ -z "$CLIENT_SECRET" ]; then
+  echo "  ✖  Client Secret cannot be empty."
+  exit 1
+fi
+
+echo "  ✔  Credentials received"
 
 # ── 3. Choose install directory ──────────────
 DEFAULT_DIR="$HOME/youtube-manager"
@@ -120,7 +126,9 @@ echo "  ✔  Directory: $INSTALL_DIR"
 
 # ── 4. Create .env ───────────────────────────
 cat > .env <<EOF
-YOUTUBE_API_KEY=$API_KEY
+GOOGLE_CLIENT_ID=$CLIENT_ID
+GOOGLE_CLIENT_SECRET=$CLIENT_SECRET
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback
 EOF
 
 echo "  ✔  .env created"
@@ -134,7 +142,9 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/youtube_manager
-      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     volumes:
       - images:/app/public/images
     depends_on:
