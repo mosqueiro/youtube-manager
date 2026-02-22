@@ -4,16 +4,23 @@ import { CalendarDay } from "@/types/calendar";
 import { Video } from "@/types/video";
 import { Channel } from "@/types/channel";
 import { VideoCard } from "./VideoCard";
-import { format, isPast, isToday as isTodayFn, startOfDay } from "date-fns";
-import { cn } from "@/lib/utils";
+import { format, isPast, isToday as isTodayFn, startOfDay, differenceInMinutes } from "date-fns";
+import { cn, parseAsUtc } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Timer } from "lucide-react";
 import Image from "next/image";
 
 interface WeekViewProps {
   days: CalendarDay[];
   channels: Channel[];
   onVideoClick: (video: Video) => void;
+}
+
+function formatGap(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
@@ -83,7 +90,6 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
                       width={48}
                       height={48}
                       className="h-full w-full object-cover"
-                      unoptimized
                     />
                   ) : (
                     <div
@@ -131,56 +137,110 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
                         "bg-amber-50/30 dark:bg-amber-500/[0.02]"
                     )}
                   >
-                    <div className="video-scroll flex flex-col gap-1.5 overflow-y-auto">
-                      {channelVideos.map((video) => (
-                        <VideoCard
-                          key={video.id}
-                          video={video}
-                          onClick={() => onVideoClick(video)}
-                        />
-                      ))}
+                    <div className="video-scroll flex flex-col overflow-y-auto">
+                      {(() => {
+                        const sorted = [...channelVideos].sort(
+                          (a, b) => new Date(a.published_at).getTime() - new Date(b.published_at).getTime()
+                        );
+                        const lastVideoTime = sorted.length > 0
+                          ? parseAsUtc(sorted[sorted.length - 1].published_at)
+                          : null;
 
-                      {/* Empty slots — ghost card style */}
-                      {missing > 0 && !isInPast &&
-                        Array.from({ length: missing }).map((_, j) => (
-                          <div
-                            key={`slot-${j}`}
-                            className="flex items-center gap-2 rounded-xl border-2 border-dashed border-amber-300/60 bg-gradient-to-br from-amber-50/80 to-orange-50/50 px-3 py-3 dark:border-amber-500/20 dark:from-amber-500/5 dark:to-orange-500/5"
-                          >
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/10">
-                              <AlertCircle className="h-4 w-4 text-amber-500" />
-                            </div>
-                            <div>
-                              <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
-                                Needs video
-                              </p>
-                              <p className="text-[10px] text-amber-500/70 dark:text-amber-500/50">
-                                Slot available
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                        return (
+                          <>
+                            {sorted.map((video, vi) => {
+                              const gap = vi > 0
+                                ? differenceInMinutes(
+                                    parseAsUtc(video.published_at),
+                                    parseAsUtc(sorted[vi - 1].published_at)
+                                  )
+                                : 0;
 
-                      {/* Past days with missing */}
-                      {missing > 0 && isInPast &&
-                        Array.from({ length: missing }).map((_, j) => (
-                          <div
-                            key={`missed-${j}`}
-                            className="flex items-center gap-2 rounded-xl border-2 border-dashed border-neutral-200/60 bg-neutral-50/50 px-3 py-3 opacity-50 dark:border-white/5 dark:bg-white/[0.02]"
-                          >
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-white/5">
-                              <AlertCircle className="h-4 w-4 text-neutral-400" />
-                            </div>
-                            <div>
-                              <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
-                                Missed
-                              </p>
-                              <p className="text-[10px] text-neutral-300 dark:text-neutral-600">
-                                No video posted
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                              return (
+                                <div key={video.id}>
+                                  {/* Gap indicator between videos */}
+                                  {vi > 0 && gap > 0 && (
+                                    <div className="flex items-center gap-1.5 px-2 py-1">
+                                      <div className="h-px flex-1 bg-neutral-200 dark:bg-[#3f3f3f]" />
+                                      <span className="flex items-center gap-1 text-[11px] font-bold tabular-nums text-neutral-500 dark:text-neutral-400">
+                                        <Timer className="h-3 w-3" />
+                                        {formatGap(gap)}
+                                      </span>
+                                      <div className="h-px flex-1 bg-neutral-200 dark:bg-[#3f3f3f]" />
+                                    </div>
+                                  )}
+                                  <VideoCard
+                                    video={video}
+                                    onClick={() => onVideoClick(video)}
+                                  />
+                                </div>
+                              );
+                            })}
+
+                            {/* Empty slots — ghost card with time since last video */}
+                            {missing > 0 && !isInPast &&
+                              Array.from({ length: missing }).map((_, j) => {
+                                const now = new Date();
+                                const sinceLastVideo = lastVideoTime && (day.isToday || isPast(dayStart))
+                                  ? differenceInMinutes(now, lastVideoTime)
+                                  : null;
+
+                                return (
+                                  <div key={`slot-${j}`}>
+                                    {(j === 0 && sorted.length > 0 && sinceLastVideo != null) && (
+                                      <div className="flex items-center gap-1.5 px-2 py-1">
+                                        <div className="h-px flex-1 bg-amber-300/60 dark:bg-amber-500/30" />
+                                        <span className="flex items-center gap-1 text-[11px] font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                                          <Timer className="h-3 w-3" />
+                                          {formatGap(sinceLastVideo)}
+                                        </span>
+                                        <div className="h-px flex-1 bg-amber-300/60 dark:bg-amber-500/30" />
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-2 rounded-xl border-2 border-dashed border-amber-300/60 bg-gradient-to-br from-amber-50/80 to-orange-50/50 px-3 py-3 dark:border-amber-500/20 dark:from-amber-500/5 dark:to-orange-500/5">
+                                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/10">
+                                        <AlertCircle className="h-4 w-4 text-amber-500" />
+                                      </div>
+                                      <div>
+                                        <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                                          Needs video
+                                        </p>
+                                        <p className="text-[10px] text-amber-500/70 dark:text-amber-500/50">
+                                          Slot available
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+
+                            {/* Past days with missing */}
+                            {missing > 0 && isInPast &&
+                              Array.from({ length: missing }).map((_, j) => (
+                                <div key={`missed-${j}`}>
+                                  {(j === 0 && sorted.length > 0) && (
+                                    <div className="flex items-center gap-1.5 px-2 py-1">
+                                      <div className="h-px flex-1 border-t border-dashed border-neutral-200/60 dark:border-white/5" />
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 rounded-xl border-2 border-dashed border-neutral-200/60 bg-neutral-50/50 px-3 py-3 opacity-50 dark:border-white/5 dark:bg-white/[0.02]">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-white/5">
+                                      <AlertCircle className="h-4 w-4 text-neutral-400" />
+                                    </div>
+                                    <div>
+                                      <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
+                                        Missed
+                                      </p>
+                                      <p className="text-[10px] text-neutral-300 dark:text-neutral-600">
+                                        No video posted
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 );

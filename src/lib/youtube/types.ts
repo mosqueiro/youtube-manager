@@ -45,6 +45,17 @@ export interface YouTubePlaylistItemsResponse {
 export interface YouTubeVideoDetailsResponse {
   items: {
     id: string;
+    snippet: {
+      title: string;
+      description: string;
+      publishedAt: string;
+      thumbnails: {
+        maxres?: { url: string };
+        high?: { url: string };
+        medium?: { url: string };
+        default?: { url: string };
+      };
+    };
     contentDetails: {
       duration: string;
     };

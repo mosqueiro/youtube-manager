@@ -17,7 +17,7 @@ export function CalendarView() {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const syncVersion = useAppStore((s) => s.syncVersion);
-  const { videos, loading, fetchVideos } = useVideos();
+  const { videos, loading, fetchVideos, updateVideoPublishedAt } = useVideos();
   const { channels } = useChannels();
   const { days, title, fetchRange, navigate, goToToday } = useCalendar(
     videos,
@@ -56,6 +56,12 @@ export function CalendarView() {
       <VideoDetailModal
         video={selectedVideo}
         onClose={() => setSelectedVideo(null)}
+        onUpdatePublishedAt={(videoId, newDate) => {
+          updateVideoPublishedAt(videoId, newDate);
+          setSelectedVideo((prev) =>
+            prev && prev.id === videoId ? { ...prev, published_at: newDate } : prev
+          );
+        }}
       />
     </div>
   );

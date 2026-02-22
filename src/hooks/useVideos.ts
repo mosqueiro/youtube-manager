@@ -25,5 +25,16 @@ export function useVideos() {
     }
   }, []);
 
-  return { videos, loading, error, fetchVideos };
+  const updateVideoPublishedAt = useCallback(
+    (videoId: string, newPublishedAt: string) => {
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === videoId ? { ...v, published_at: newPublishedAt } : v
+        )
+      );
+    },
+    []
+  );
+
+  return { videos, loading, error, fetchVideos, updateVideoPublishedAt };
 }

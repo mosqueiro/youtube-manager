@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import pool, { ensureTables } from "@/lib/db";
 import { resolveChannelId, fetchChannelInfo } from "@/lib/youtube/channels";
 import { CHANNEL_COLORS } from "@/lib/constants";
+import { downloadImage } from "@/lib/images";
 
 export async function GET() {
   await ensureTables();
@@ -36,6 +37,13 @@ export async function POST(req: NextRequest) {
     // Fetch channel info from YouTube
     const info = await fetchChannelInfo(channelId);
 
+    // Download channel avatar locally (fallback to remote URL on failure)
+    const localAvatar = await downloadImage(
+      info.avatar_url,
+      `images/avatars/${info.id}.jpg`
+    );
+    const avatarUrl = localAvatar || info.avatar_url;
+
     // Assign color based on current channel count
     const countRes = await pool.query("SELECT COUNT(*) FROM channels");
     const colorIndex = parseInt(countRes.rows[0].count) % CHANNEL_COLORS.length;
@@ -50,7 +58,7 @@ export async function POST(req: NextRequest) {
         info.id,
         info.name,
         info.handle,
-        info.avatar_url,
+        avatarUrl,
         info.subscriber_count,
         color,
       ]

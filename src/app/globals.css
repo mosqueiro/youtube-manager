@@ -66,6 +66,14 @@ body {
   transition-timing-function: ease;
 }
 
+/* Pointer cursor on all interactive elements */
+button,
+a,
+select,
+[role="button"] {
+  cursor: pointer;
+}
+
 /* Better select styling */
 select {
   appearance: none;

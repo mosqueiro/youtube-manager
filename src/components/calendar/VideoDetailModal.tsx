@@ -1,25 +1,75 @@
 "use client";
 
+import { useState } from "react";
 import { Video } from "@/types/video";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
-import { formatDuration, formatViewCount, formatTimeWithOffset } from "@/lib/utils";
+import { formatDuration, formatViewCount, formatTimeWithOffset, parseAsUtc } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
 import { format } from "date-fns";
-import { ExternalLink, Eye, Clock, Calendar, ThumbsUp, MessageCircle } from "lucide-react";
+import { ExternalLink, Eye, Clock, Calendar, ThumbsUp, MessageCircle, Pencil, Check, X } from "lucide-react";
 import Image from "next/image";
 
 interface VideoDetailModalProps {
   video: Video | null;
   onClose: () => void;
+  onUpdatePublishedAt?: (videoId: string, newDate: string) => void;
 }
 
-export function VideoDetailModal({ video, onClose }: VideoDetailModalProps) {
+export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoDetailModalProps) {
   const utcOffset = useAppStore((s) => s.utcOffset);
+  const [editing, setEditing] = useState(false);
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
+  const [saving, setSaving] = useState(false);
 
   if (!video) return null;
 
   const time = formatTimeWithOffset(video.published_at, utcOffset);
+  const utcDate = parseAsUtc(video.published_at);
+
+  function startEditing() {
+    const d = parseAsUtc(video!.published_at);
+    const adjusted = new Date(d.getTime() + utcOffset * 3600000);
+    const y = adjusted.getUTCFullYear();
+    const mo = String(adjusted.getUTCMonth() + 1).padStart(2, "0");
+    const da = String(adjusted.getUTCDate()).padStart(2, "0");
+    const h = String(adjusted.getUTCHours()).padStart(2, "0");
+    const mi = String(adjusted.getUTCMinutes()).padStart(2, "0");
+    setEditDate(`${da}/${mo}/${y}`);
+    setEditTime(`${h}:${mi}`);
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    if (!editDate || !editTime || !video) return;
+    // Parse dd/mm/yyyy and HH:mm
+    const parts = editDate.split("/");
+    if (parts.length !== 3) return;
+    const [dd, mm, yyyy] = parts;
+    const isoLocal = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${editTime}:00Z`;
+    const asUtc = new Date(isoLocal);
+    if (isNaN(asUtc.getTime())) return;
+
+    setSaving(true);
+    try {
+      const utcMs = asUtc.getTime() - utcOffset * 3600000;
+      const utcIso = new Date(utcMs).toISOString();
+
+      const res = await fetch(`/api/videos/${video.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ published_at: utcIso }),
+      });
+
+      if (res.ok) {
+        onUpdatePublishedAt?.(video.id, utcIso);
+        setEditing(false);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <Modal open={!!video} onClose={onClose}>
@@ -52,16 +102,55 @@ export function VideoDetailModal({ video, onClose }: VideoDetailModalProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-sm">
-          <div className="flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1 dark:bg-red-500/10">
-            <Clock className="h-3.5 w-3.5 text-[#ff0000]" />
-            <span className="font-bold text-[#cc0000] dark:text-[#ff4e45]">
-              {time}
-            </span>
-          </div>
+          {/* Editable publish time */}
+          {editing ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                placeholder="dd/mm/yyyy"
+                className="w-[110px] rounded-lg border border-neutral-300 bg-white px-2.5 py-2 text-center text-sm font-medium tabular-nums dark:border-neutral-600 dark:bg-neutral-800"
+              />
+              <input
+                type="text"
+                value={editTime}
+                onChange={(e) => setEditTime(e.target.value)}
+                placeholder="HH:mm"
+                className="w-[70px] rounded-lg border border-neutral-300 bg-white px-2.5 py-2 text-center text-sm font-medium tabular-nums dark:border-neutral-600 dark:bg-neutral-800"
+              />
+              <button
+                onClick={saveEdit}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-green-600 disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Save
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-200 px-3 py-2 text-xs font-bold text-neutral-600 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-300"
+              >
+                <X className="h-3.5 w-3.5" />
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={startEditing}
+              className="group flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1 transition-colors hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20"
+            >
+              <Clock className="h-3.5 w-3.5 text-[#ff0000]" />
+              <span className="font-bold text-[#cc0000] dark:text-[#ff4e45]">
+                {time}
+              </span>
+              <Pencil className="h-3 w-3 text-[#ff0000] opacity-0 transition-opacity group-hover:opacity-100" />
+            </button>
+          )}
           <div className="flex items-center gap-1.5 text-slate-500">
             <Calendar className="h-3.5 w-3.5" />
             <span>
-              {format(new Date(video.published_at), "MMM d, yyyy")}
+              {format(utcDate, "MMM d, yyyy")}
             </span>
           </div>
           {video.view_count != null && (

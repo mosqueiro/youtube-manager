@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool, { ensureTables } from "@/lib/db";
 import { fetchChannelInfo } from "@/lib/youtube/channels";
 import { fetchChannelVideos } from "@/lib/youtube/videos";
+import { downloadImage } from "@/lib/images";
 
 export async function POST() {
   try {
@@ -26,6 +27,16 @@ export async function POST() {
         let newCount = 0;
 
         for (const video of videos) {
+          // Download thumbnail locally (fallback to remote URL on failure)
+          let thumbnailUrl = video.thumbnail_url;
+          if (video.thumbnail_url) {
+            const localThumb = await downloadImage(
+              video.thumbnail_url,
+              `images/thumbnails/${video.id}.jpg`
+            );
+            thumbnailUrl = localThumb || video.thumbnail_url;
+          }
+
           // Upsert video
           const res = await pool.query(
             `INSERT INTO videos (id, channel_id, title, thumbnail_url, published_at, duration, view_count, like_count, comment_count, description, status)
@@ -33,6 +44,7 @@ export async function POST() {
              ON CONFLICT (id) DO UPDATE SET
                title = EXCLUDED.title,
                thumbnail_url = EXCLUDED.thumbnail_url,
+               published_at = COALESCE(videos.published_at, EXCLUDED.published_at),
                duration = EXCLUDED.duration,
                view_count = EXCLUDED.view_count,
                like_count = EXCLUDED.like_count,
@@ -44,7 +56,7 @@ export async function POST() {
               video.id,
               channel.id,
               video.title,
-              video.thumbnail_url,
+              thumbnailUrl,
               video.published_at,
               video.duration,
               video.view_count,
@@ -58,6 +70,13 @@ export async function POST() {
           if (res.rows[0]?.is_new) newCount++;
         }
 
+        // Download channel avatar locally (fallback to remote URL on failure)
+        const localAvatar = await downloadImage(
+          info.avatar_url,
+          `images/avatars/${channel.id}.jpg`
+        );
+        const avatarUrl = localAvatar || info.avatar_url;
+
         // Update channel info
         await pool.query(
           `UPDATE channels SET name = $1, handle = $2, avatar_url = $3, subscriber_count = $4, updated_at = NOW()
@@ -65,7 +84,7 @@ export async function POST() {
           [
             info.name,
             info.handle,
-            info.avatar_url,
+            avatarUrl,
             info.subscriber_count,
             channel.id,
           ]
