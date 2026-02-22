@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Channel } from "@/types/channel";
+import { useAppStore } from "@/lib/store";
 
 export function useChannels() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelsVersion = useAppStore((s) => s.channelsVersion);
+  const bumpChannels = useAppStore((s) => s.bumpChannels);
 
   const fetchChannels = useCallback(async () => {
     try {
@@ -32,8 +35,9 @@ export function useChannels() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to add channel");
     setChannels((prev) => [...prev, data]);
+    bumpChannels();
     return data;
-  }, []);
+  }, [bumpChannels]);
 
   const updateChannel = useCallback(
     async (channelId: string, data: Partial<Pick<Channel, "videos_per_day" | "color">>) => {
@@ -56,11 +60,12 @@ export function useChannels() {
     });
     if (!res.ok) throw new Error("Failed to remove channel");
     setChannels((prev) => prev.filter((c) => c.id !== channelId));
-  }, []);
+    bumpChannels();
+  }, [bumpChannels]);
 
   useEffect(() => {
     fetchChannels();
-  }, [fetchChannels]);
+  }, [fetchChannels, channelsVersion]);
 
   return { channels, loading, error, addChannel, updateChannel, removeChannel, refetch: fetchChannels };
 }

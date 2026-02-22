@@ -4,17 +4,19 @@ import { useChannels } from "@/hooks/useChannels";
 import { ChannelCard } from "@/components/channels/ChannelCard";
 import { AddChannelForm } from "@/components/channels/AddChannelForm";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Tv } from "lucide-react";
 
 export default function ChannelsPage() {
   const { channels, loading, addChannel, updateChannel, removeChannel } = useChannels();
+  const { t } = useTranslation();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Channels</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">{t("channels.title")}</h1>
         <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-          Manage the YouTube channels you want to track.
+          {t("channels.subtitle")}
         </p>
       </div>
 
@@ -33,10 +35,10 @@ export default function ChannelsPage() {
           </div>
           <div>
             <p className="font-bold text-slate-500 dark:text-slate-400">
-              No channels yet
+              {t("channels.noChannels")}
             </p>
             <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-              Add a channel above to get started.
+              {t("channels.noChannelsHint")}
             </p>
           </div>
         </div>

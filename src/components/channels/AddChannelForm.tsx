@@ -4,12 +4,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Plus, Loader2 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface AddChannelFormProps {
   onAdd: (input: string) => Promise<void>;
 }
 
 export function AddChannelForm({ onAdd }: AddChannelFormProps) {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export function AddChannelForm({ onAdd }: AddChannelFormProps) {
       await onAdd(input.trim());
       setInput("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add channel");
+      setError(err instanceof Error ? err.message : t("channel.addError"));
     } finally {
       setLoading(false);
     }
@@ -36,7 +38,7 @@ export function AddChannelForm({ onAdd }: AddChannelFormProps) {
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Channel ID, @handle, or YouTube URL..."
+          placeholder={t("channel.placeholder")}
           disabled={loading}
           className="flex-1"
         />
@@ -46,7 +48,7 @@ export function AddChannelForm({ onAdd }: AddChannelFormProps) {
           ) : (
             <Plus className="h-4 w-4" />
           )}
-          Add
+          {t("channel.add")}
         </Button>
       </div>
       {error && (

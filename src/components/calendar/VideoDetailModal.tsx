@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Video } from "@/types/video";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
-import { formatDuration, formatViewCount, formatTimeWithOffset, parseAsUtc } from "@/lib/utils";
-import { useAppStore } from "@/lib/store";
+import { formatDuration, formatViewCount, formatTime } from "@/lib/utils";
 import { format } from "date-fns";
 import { ExternalLink, Eye, Clock, Calendar, ThumbsUp, MessageCircle, Pencil, Check, X } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 import Image from "next/image";
 
 interface VideoDetailModalProps {
@@ -17,7 +17,7 @@ interface VideoDetailModalProps {
 }
 
 export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoDetailModalProps) {
-  const utcOffset = useAppStore((s) => s.utcOffset);
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
@@ -25,17 +25,16 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
 
   if (!video) return null;
 
-  const time = formatTimeWithOffset(video.published_at, utcOffset);
-  const utcDate = parseAsUtc(video.published_at);
+  const publishedDate = new Date(video.published_at);
+  const time = formatTime(video.published_at);
 
   function startEditing() {
-    const d = parseAsUtc(video!.published_at);
-    const adjusted = new Date(d.getTime() + utcOffset * 3600000);
-    const y = adjusted.getUTCFullYear();
-    const mo = String(adjusted.getUTCMonth() + 1).padStart(2, "0");
-    const da = String(adjusted.getUTCDate()).padStart(2, "0");
-    const h = String(adjusted.getUTCHours()).padStart(2, "0");
-    const mi = String(adjusted.getUTCMinutes()).padStart(2, "0");
+    const d = new Date(video!.published_at);
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
     setEditDate(`${da}/${mo}/${y}`);
     setEditTime(`${h}:${mi}`);
     setEditing(true);
@@ -47,23 +46,20 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
     const parts = editDate.split("/");
     if (parts.length !== 3) return;
     const [dd, mm, yyyy] = parts;
-    const isoLocal = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${editTime}:00Z`;
-    const asUtc = new Date(isoLocal);
-    if (isNaN(asUtc.getTime())) return;
+    const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${editTime}:00`;
+    const parsed = new Date(iso);
+    if (isNaN(parsed.getTime())) return;
 
     setSaving(true);
     try {
-      const utcMs = asUtc.getTime() - utcOffset * 3600000;
-      const utcIso = new Date(utcMs).toISOString();
-
       const res = await fetch(`/api/videos/${video.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ published_at: utcIso }),
+        body: JSON.stringify({ published_at: parsed.toISOString() }),
       });
 
       if (res.ok) {
-        onUpdatePublishedAt?.(video.id, utcIso);
+        onUpdatePublishedAt?.(video.id, parsed.toISOString());
         setEditing(false);
       }
     } finally {
@@ -125,14 +121,14 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
                 className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-green-600 disabled:opacity-50"
               >
                 <Check className="h-3.5 w-3.5" />
-                Save
+                {t("modal.save")}
               </button>
               <button
                 onClick={() => setEditing(false)}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-200 px-3 py-2 text-xs font-bold text-neutral-600 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-300"
               >
                 <X className="h-3.5 w-3.5" />
-                Cancel
+                {t("modal.cancel")}
               </button>
             </div>
           ) : (
@@ -150,25 +146,25 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
           <div className="flex items-center gap-1.5 text-slate-500">
             <Calendar className="h-3.5 w-3.5" />
             <span>
-              {format(utcDate, "MMM d, yyyy")}
+              {format(publishedDate, "MMM d, yyyy")}
             </span>
           </div>
           {video.view_count != null && (
             <div className="flex items-center gap-1.5 text-slate-500">
               <Eye className="h-3.5 w-3.5" />
-              <span>{formatViewCount(video.view_count)} views</span>
+              <span>{formatViewCount(video.view_count)} {t("modal.views")}</span>
             </div>
           )}
           {video.like_count != null && video.like_count > 0 && (
             <div className="flex items-center gap-1.5 text-slate-500">
               <ThumbsUp className="h-3.5 w-3.5" />
-              <span>{formatViewCount(video.like_count)} likes</span>
+              <span>{formatViewCount(video.like_count)} {t("modal.likes")}</span>
             </div>
           )}
           {video.comment_count != null && video.comment_count > 0 && (
             <div className="flex items-center gap-1.5 text-slate-500">
               <MessageCircle className="h-3.5 w-3.5" />
-              <span>{formatViewCount(video.comment_count)} comments</span>
+              <span>{formatViewCount(video.comment_count)} {t("modal.comments")}</span>
             </div>
           )}
         </div>
@@ -186,7 +182,7 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
           className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-red-500/25 transition-all hover:shadow-md hover:shadow-red-500/30"
         >
           <ExternalLink className="h-4 w-4" />
-          Watch on YouTube
+          {t("modal.watchOnYouTube")}
         </a>
       </div>
     </Modal>

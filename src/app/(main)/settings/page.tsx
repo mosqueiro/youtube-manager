@@ -6,7 +6,9 @@ import { ChannelCard } from "@/components/channels/ChannelCard";
 import { useSync } from "@/hooks/useSync";
 import { useAppStore } from "@/lib/store";
 import { format } from "date-fns";
-import { Info, Globe, Clock, Tv } from "lucide-react";
+import { Info, Globe, Clock, Tv, Languages } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
+import { Locale } from "@/lib/i18n";
 
 const UTC_OPTIONS = [
   { value: -12, label: "UTC-12" },
@@ -42,21 +44,54 @@ export default function SettingsPage() {
   const { lastSync } = useSync();
   const utcOffset = useAppStore((s) => s.utcOffset);
   const setUtcOffset = useAppStore((s) => s.setUtcOffset);
+  const locale = useAppStore((s) => s.locale);
+  const setLocale = useAppStore((s) => s.setLocale);
+  const { t } = useTranslation();
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">{t("settings.title")}</h1>
         <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-          Configure your YouTube Manager preferences.
+          {t("settings.subtitle")}
         </p>
       </div>
+
+      {/* Language */}
+      <section className="space-y-3">
+        <h2 className="flex items-center gap-2 text-lg font-bold">
+          <Languages className="h-5 w-5 text-[#ff0000]" />
+          {t("settings.language")}
+        </h2>
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/60 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-white/5 dark:bg-white/[0.03]">
+          <div className="flex-1">
+            <label
+              htmlFor="locale-select"
+              className="text-sm font-bold text-slate-700 dark:text-slate-300"
+            >
+              {t("settings.languageLabel")}
+            </label>
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+              {t("settings.languageHint")}
+            </p>
+          </div>
+          <select
+            id="locale-select"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as Locale)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm dark:border-white/10 dark:bg-white/5"
+          >
+            <option value="en">English</option>
+            <option value="pt-BR">Português (BR)</option>
+          </select>
+        </div>
+      </section>
 
       {/* Timezone */}
       <section className="space-y-3">
         <h2 className="flex items-center gap-2 text-lg font-bold">
           <Globe className="h-5 w-5 text-[#ff0000]" />
-          Timezone
+          {t("settings.timezone")}
         </h2>
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200/60 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-white/5 dark:bg-white/[0.03]">
           <div className="flex-1">
@@ -64,10 +99,10 @@ export default function SettingsPage() {
               htmlFor="utc-select"
               className="text-sm font-bold text-slate-700 dark:text-slate-300"
             >
-              Display times in
+              {t("settings.displayTimesIn")}
             </label>
             <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-              All video publish times will be shown in this timezone.
+              {t("settings.timezoneHint")}
             </p>
           </div>
           <select
@@ -89,7 +124,7 @@ export default function SettingsPage() {
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-bold">
           <Tv className="h-5 w-5 text-[#ff0000]" />
-          Add Channel
+          {t("settings.addChannel")}
         </h2>
         <AddChannelForm onAdd={addChannel} />
         <div className="flex items-start gap-3 rounded-2xl bg-gradient-to-r from-red-50 to-red-50 p-4 text-sm dark:from-red-500/5 dark:to-red-600/5">
@@ -98,11 +133,10 @@ export default function SettingsPage() {
           </div>
           <div>
             <p className="font-semibold text-[#cc0000] dark:text-[#ff4e45]">
-              How to add channels
+              {t("settings.howToAdd")}
             </p>
             <p className="mt-0.5 text-xs leading-relaxed text-[#cc0000]/70 dark:text-[#ff4e45]/60">
-              Use channel ID (UC...), @handle, or full YouTube URL.
-              After adding, click <strong>Sync</strong> in the header to fetch videos.
+              {t("settings.howToAddDetail")}
             </p>
           </div>
         </div>
@@ -113,13 +147,13 @@ export default function SettingsPage() {
         <section className="space-y-4">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold">
-              Your Channels
+              {t("settings.yourChannels")}
               <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-[#cc0000] dark:bg-red-500/10 dark:text-[#ff4e45]">
                 {channels.length}
               </span>
             </h2>
             <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-              Set the daily video goal per channel. Missing slots show up on the calendar.
+              {t("settings.channelGoalHint")}
             </p>
           </div>
           <div className="space-y-3">
@@ -139,7 +173,7 @@ export default function SettingsPage() {
       <section className="space-y-3">
         <h2 className="flex items-center gap-2 text-lg font-bold">
           <Clock className="h-5 w-5 text-[#ff0000]" />
-          Sync Status
+          {t("settings.syncStatus")}
         </h2>
         <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-white/5 dark:bg-white/[0.03]">
           <div className="flex items-center gap-3">
@@ -154,10 +188,10 @@ export default function SettingsPage() {
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 {lastSync
                   ? format(new Date(lastSync), "MMM d, yyyy 'at' h:mm a")
-                  : "Never synced"}
+                  : t("settings.neverSynced")}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                Click Sync in the header to fetch latest videos.
+                {t("settings.syncHint")}
               </p>
             </div>
           </div>

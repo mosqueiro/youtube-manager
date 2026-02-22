@@ -5,9 +5,9 @@ import { Video } from "@/types/video";
 import { Channel } from "@/types/channel";
 import { VideoCard } from "./VideoCard";
 import { format, isPast, isToday as isTodayFn, startOfDay, differenceInMinutes } from "date-fns";
-import { cn, parseAsUtc } from "@/lib/utils";
-import { useAppStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 import { AlertCircle, Timer } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 import Image from "next/image";
 
 interface WeekViewProps {
@@ -24,14 +24,14 @@ function formatGap(minutes: number): string {
 }
 
 export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
-  const utcOffset = useAppStore((s) => s.utcOffset);
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-4">
       {/* Day headers — sticky row */}
       <div className="grid min-w-[750px] gap-0" style={{ gridTemplateColumns: "140px repeat(5, 1fr)" }}>
         <div className="rounded-xl bg-neutral-100/80 px-3 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:bg-[#272727]/50 dark:text-neutral-500">
-          Channel
+          {t("calendar.channel")}
         </div>
         {days.map((day, i) => (
           <div
@@ -110,7 +110,7 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
                       style={{ backgroundColor: channel.color }}
                     />
                     <span className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                      {goal}/day
+                      {goal}{t("channel.perDay")}
                     </span>
                   </div>
                 </div>
@@ -143,7 +143,7 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
                           (a, b) => new Date(a.published_at).getTime() - new Date(b.published_at).getTime()
                         );
                         const lastVideoTime = sorted.length > 0
-                          ? parseAsUtc(sorted[sorted.length - 1].published_at)
+                          ? new Date(sorted[sorted.length - 1].published_at)
                           : null;
 
                         return (
@@ -151,8 +151,8 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
                             {sorted.map((video, vi) => {
                               const gap = vi > 0
                                 ? differenceInMinutes(
-                                    parseAsUtc(video.published_at),
-                                    parseAsUtc(sorted[vi - 1].published_at)
+                                    new Date(video.published_at),
+                                    new Date(sorted[vi - 1].published_at)
                                   )
                                 : 0;
 
@@ -203,10 +203,10 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
                                       </div>
                                       <div>
                                         <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
-                                          Needs video
+                                          {t("calendar.needsVideo")}
                                         </p>
                                         <p className="text-[10px] text-amber-500/70 dark:text-amber-500/50">
-                                          Slot available
+                                          {t("calendar.slotAvailable")}
                                         </p>
                                       </div>
                                     </div>
@@ -229,10 +229,10 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
                                     </div>
                                     <div>
                                       <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
-                                        Missed
+                                        {t("calendar.missed")}
                                       </p>
                                       <p className="text-[10px] text-neutral-300 dark:text-neutral-600">
-                                        No video posted
+                                        {t("calendar.noVideoPosted")}
                                       </p>
                                     </div>
                                   </div>
@@ -257,10 +257,10 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
             <AlertCircle className="h-6 w-6 text-neutral-300 dark:text-neutral-600" />
           </div>
           <p className="font-semibold text-neutral-500 dark:text-neutral-400">
-            No channels yet
+            {t("calendar.noChannels")}
           </p>
           <p className="text-sm text-neutral-400 dark:text-neutral-500">
-            Go to Settings to add your YouTube channels.
+            {t("calendar.noChannelsHint")}
           </p>
         </div>
       )}

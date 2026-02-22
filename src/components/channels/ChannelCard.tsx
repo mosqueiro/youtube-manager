@@ -3,6 +3,7 @@
 import { Channel } from "@/types/channel";
 import { formatViewCount } from "@/lib/utils";
 import { Trash2, Users, Minus, Plus } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 import Image from "next/image";
 
 interface ChannelCardProps {
@@ -12,6 +13,7 @@ interface ChannelCardProps {
 }
 
 export function ChannelCard({ channel, onRemove, onUpdate }: ChannelCardProps) {
+  const { t } = useTranslation();
   const goal = channel.videos_per_day || 1;
 
   return (
@@ -58,7 +60,7 @@ export function ChannelCard({ channel, onRemove, onUpdate }: ChannelCardProps) {
         {channel.subscriber_count != null && (
           <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-slate-400">
             <Users className="h-3 w-3" />
-            {formatViewCount(channel.subscriber_count)} subscribers
+            {formatViewCount(channel.subscriber_count)} {t("channel.subscribers")}
           </p>
         )}
       </div>
@@ -67,7 +69,7 @@ export function ChannelCard({ channel, onRemove, onUpdate }: ChannelCardProps) {
       {onUpdate && (
         <div className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50 px-3 py-2 dark:border-white/5 dark:bg-white/[0.03]">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            Goal
+            {t("channel.goal")}
           </span>
           <div className="flex items-center gap-1.5">
             <button
@@ -94,7 +96,7 @@ export function ChannelCard({ channel, onRemove, onUpdate }: ChannelCardProps) {
               <Plus className="h-3 w-3" />
             </button>
           </div>
-          <span className="text-[10px] text-slate-400">/day</span>
+          <span className="text-[10px] text-slate-400">{t("channel.perDay")}</span>
         </div>
       )}
 

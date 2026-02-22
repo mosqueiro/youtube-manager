@@ -1,8 +1,7 @@
 "use client";
 
 import { Video } from "@/types/video";
-import { formatDuration, formatTimeWithOffset, formatViewCount } from "@/lib/utils";
-import { useAppStore } from "@/lib/store";
+import { formatDuration, formatTime, formatViewCount } from "@/lib/utils";
 import { Clock, Eye, ThumbsUp, MessageCircle } from "lucide-react";
 import Image from "next/image";
 
@@ -13,8 +12,7 @@ interface VideoCardProps {
 }
 
 export function VideoCard({ video, compact, onClick }: VideoCardProps) {
-  const utcOffset = useAppStore((s) => s.utcOffset);
-  const time = formatTimeWithOffset(video.published_at, utcOffset);
+  const time = formatTime(video.published_at);
 
   if (compact) {
     return (

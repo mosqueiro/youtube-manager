@@ -8,10 +8,16 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 });
 
-let migrated = false;
+let migratePromise: Promise<void> | null = null;
 
 export async function ensureTables() {
-  if (migrated) return;
+  if (!migratePromise) {
+    migratePromise = runMigrations();
+  }
+  return migratePromise;
+}
+
+async function runMigrations() {
   const client = await pool.connect();
   try {
     await client.query(`
@@ -25,7 +31,8 @@ export async function ensureTables() {
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
-
+    `);
+    await client.query(`
       CREATE TABLE IF NOT EXISTS videos (
         id VARCHAR(20) PRIMARY KEY,
         channel_id VARCHAR(30) REFERENCES channels(id) ON DELETE CASCADE,
@@ -38,7 +45,8 @@ export async function ensureTables() {
         status VARCHAR(20) DEFAULT 'public',
         created_at TIMESTAMP DEFAULT NOW()
       );
-
+    `);
+    await client.query(`
       CREATE TABLE IF NOT EXISTS sync_log (
         id SERIAL PRIMARY KEY,
         channel_id VARCHAR(30) REFERENCES channels(id) ON DELETE CASCADE,
@@ -47,19 +55,13 @@ export async function ensureTables() {
         status VARCHAR(20) DEFAULT 'success',
         error_message TEXT
       );
-
-      CREATE INDEX IF NOT EXISTS idx_videos_channel_id ON videos(channel_id);
-      CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos(published_at);
-      CREATE INDEX IF NOT EXISTS idx_sync_log_channel_id ON sync_log(channel_id);
-
-      -- Migration: add videos_per_day to channels
-      ALTER TABLE channels ADD COLUMN IF NOT EXISTS videos_per_day INTEGER DEFAULT 1;
-
-      -- Migration: add like_count and comment_count to videos
-      ALTER TABLE videos ADD COLUMN IF NOT EXISTS like_count BIGINT DEFAULT 0;
-      ALTER TABLE videos ADD COLUMN IF NOT EXISTS comment_count BIGINT DEFAULT 0;
     `);
-    migrated = true;
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_videos_channel_id ON videos(channel_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos(published_at)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_sync_log_channel_id ON sync_log(channel_id)`);
+    await client.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS videos_per_day INTEGER DEFAULT 1`);
+    await client.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS like_count BIGINT DEFAULT 0`);
+    await client.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS comment_count BIGINT DEFAULT 0`);
   } finally {
     client.release();
   }

@@ -2,11 +2,16 @@
 
 import { RefreshCw, Check } from "lucide-react";
 import { useSync } from "@/hooks/useSync";
+import { useChannels } from "@/hooks/useChannels";
 import { getRelativeTime } from "@/lib/utils";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useState, useEffect } from "react";
 
 export function SyncButton() {
+  const { t } = useTranslation();
   const { syncing, lastSync, sync } = useSync();
+  const { channels } = useChannels();
+  const hasChannels = channels.length > 0;
   const [justSynced, setJustSynced] = useState(false);
 
   const handleSync = async () => {
@@ -34,7 +39,7 @@ export function SyncButton() {
       )}
       <button
         onClick={handleSync}
-        disabled={syncing}
+        disabled={syncing || !hasChannels}
         className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition-all disabled:opacity-60 ${
           justSynced
             ? "bg-emerald-500 text-white shadow-emerald-500/20"
@@ -50,7 +55,7 @@ export function SyncButton() {
             className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
           />
         )}
-        {justSynced ? "Done!" : syncing ? "Syncing..." : "Sync"}
+        {justSynced ? t("sync.done") : syncing ? t("sync.syncing") : t("sync.sync")}
       </button>
     </div>
   );

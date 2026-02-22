@@ -11,5 +11,3 @@ export const CHANNEL_COLORS = [
 
 export const VIEW_MODES = ["month", "week"] as const;
 export type ViewMode = (typeof VIEW_MODES)[number];
-
-export const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

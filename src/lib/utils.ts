@@ -35,38 +35,15 @@ export function extractChannelId(input: string): string {
   return trimmed;
 }
 
-/**
- * Convert a date to a specific UTC offset.
- * E.g. utcOffset=-3 converts to BRT (UTC-3).
- */
-export function toUtcOffset(date: Date, utcOffset: number): Date {
-  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
-  return new Date(utcMs + utcOffset * 3600000);
-}
 
 /**
- * Parse a date string ensuring UTC interpretation.
- * PostgreSQL may return timestamps without 'Z', which JS treats as local time.
+ * Format a time string from a DB timestamp (already in local time).
+ * Returns "h:mm AM/PM".
  */
-export function parseAsUtc(dateStr: string | Date): Date {
-  if (dateStr instanceof Date) return dateStr;
-  // If no timezone indicator, treat as UTC
-  if (!dateStr.endsWith("Z") && !dateStr.includes("+") && !/\d{2}:\d{2}$/.test(dateStr.slice(-6))) {
-    return new Date(dateStr + "Z");
-  }
-  return new Date(dateStr);
-}
-
-export function formatTimeWithOffset(dateStr: string | Date, utcOffset: number): string {
-  const date = parseAsUtc(dateStr);
-  // Get UTC hours/minutes directly, then apply offset
-  const utcH = date.getUTCHours();
-  const utcM = date.getUTCMinutes();
-  let totalMinutes = utcH * 60 + utcM + utcOffset * 60;
-  if (totalMinutes < 0) totalMinutes += 1440;
-  if (totalMinutes >= 1440) totalMinutes -= 1440;
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = String(totalMinutes % 60).padStart(2, "0");
+export function formatTime(dateStr: string | Date): string {
+  const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
   const ampm = hours >= 12 ? "PM" : "AM";
   const h12 = hours % 12 || 12;
   return `${h12}:${minutes} ${ampm}`;

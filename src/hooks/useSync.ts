@@ -33,7 +33,12 @@ export function useSync() {
     try {
       setSyncing(true);
       setError(null);
-      const res = await fetch("/api/sync", { method: "POST" });
+      const utcOffset = useAppStore.getState().utcOffset;
+      const res = await fetch("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ utcOffset }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Sync failed");
       setResults(data.results || []);

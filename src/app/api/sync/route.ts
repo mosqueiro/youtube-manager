@@ -4,12 +4,17 @@ import { fetchChannelInfo } from "@/lib/youtube/channels";
 import { fetchChannelVideos } from "@/lib/youtube/videos";
 import { downloadImage } from "@/lib/images";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     await ensureTables();
+    const body = await request.json().catch(() => ({}));
+    const utcOffset: number = typeof body.utcOffset === "number" ? body.utcOffset : 0;
+    console.log("[sync] Starting sync, utcOffset:", utcOffset);
     const { rows: channels } = await pool.query("SELECT * FROM channels");
+    console.log("[sync] Channels found:", channels.length);
 
     if (channels.length === 0) {
+      console.log("[sync] No channels to sync");
       return NextResponse.json({
         message: "No channels to sync",
         results: [],
@@ -20,13 +25,21 @@ export async function POST() {
 
     for (const channel of channels) {
       try {
+        console.log("[sync] Processing channel:", channel.id, channel.name);
         // Get uploads playlist ID
         const info = await fetchChannelInfo(channel.id);
+        console.log("[sync] Channel info:", info.name, "uploads:", info.uploads_playlist_id);
         const videos = await fetchChannelVideos(info.uploads_playlist_id, 50);
+        console.log("[sync] Videos fetched:", videos.length);
 
         let newCount = 0;
 
         for (const video of videos) {
+          // Convert published_at from UTC to local time using the user's offset
+          const utcDate = new Date(video.published_at);
+          const localMs = utcDate.getTime() + utcOffset * 3600000;
+          const localPublishedAt = new Date(localMs).toISOString();
+
           // Download thumbnail locally (fallback to remote URL on failure)
           let thumbnailUrl = video.thumbnail_url;
           if (video.thumbnail_url) {
@@ -44,7 +57,7 @@ export async function POST() {
              ON CONFLICT (id) DO UPDATE SET
                title = EXCLUDED.title,
                thumbnail_url = EXCLUDED.thumbnail_url,
-               published_at = COALESCE(videos.published_at, EXCLUDED.published_at),
+               published_at = EXCLUDED.published_at,
                duration = EXCLUDED.duration,
                view_count = EXCLUDED.view_count,
                like_count = EXCLUDED.like_count,
@@ -57,7 +70,7 @@ export async function POST() {
               channel.id,
               video.title,
               thumbnailUrl,
-              video.published_at,
+              localPublishedAt,
               video.duration,
               video.view_count,
               video.like_count,
@@ -105,6 +118,7 @@ export async function POST() {
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
+        console.error("[sync] Error syncing channel:", channel.id, message, err);
         await pool.query(
           `INSERT INTO sync_log (channel_id, status, error_message) VALUES ($1, 'error', $2)`,
           [channel.id, message]
@@ -118,9 +132,11 @@ export async function POST() {
       }
     }
 
+    console.log("[sync] Sync complete, results:", JSON.stringify(results));
     return NextResponse.json({ message: "Sync complete", results });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[sync] Fatal error:", message, err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

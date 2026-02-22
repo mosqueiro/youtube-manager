@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ViewMode } from "@/lib/constants";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface CalendarHeaderProps {
   title: string;
@@ -18,6 +19,8 @@ export function CalendarHeader({
   onNavigate,
   onToday,
 }: CalendarHeaderProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
@@ -44,7 +47,7 @@ export function CalendarHeader({
           onClick={onToday}
           className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 shadow-sm transition-all hover:bg-neutral-50 dark:border-[#3f3f3f] dark:bg-[#272727] dark:text-neutral-300 dark:hover:bg-[#3f3f3f]"
         >
-          Today
+          {t("calendar.today")}
         </button>
         <div className="flex overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-[#3f3f3f] dark:bg-[#272727]">
           <button
@@ -55,7 +58,7 @@ export function CalendarHeader({
                 : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-[#3f3f3f]"
             }`}
           >
-            Month
+            {t("calendar.month")}
           </button>
           <button
             onClick={() => onViewModeChange("week")}
@@ -65,7 +68,7 @@ export function CalendarHeader({
                 : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-[#3f3f3f]"
             }`}
           >
-            Week
+            {t("calendar.week")}
           </button>
         </div>
       </div>

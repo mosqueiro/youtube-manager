@@ -7,11 +7,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SyncButton } from "@/components/sync/SyncButton";
+import { useTranslation } from "@/hooks/useTranslation";
+import { TranslationKey } from "@/lib/i18n";
 
 const navItems = [
-  { href: "/calendar", label: "Calendar" },
-  { href: "/channels", label: "Channels" },
-  { href: "/settings", label: "Settings" },
+  { href: "/calendar", labelKey: "sidebar.calendar" as TranslationKey },
+  { href: "/channels", labelKey: "sidebar.channels" as TranslationKey },
+  { href: "/settings", labelKey: "sidebar.settings" as TranslationKey },
 ];
 
 export function Header() {
@@ -19,6 +21,7 @@ export function Header() {
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   useEffect(() => setMounted(true), []);
 
@@ -36,7 +39,7 @@ export function Header() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#ff0000]">
               <Youtube className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold">YT Manager</span>
+            <span className="font-bold">{t("sidebar.title")}</span>
           </div>
         </div>
 
@@ -71,7 +74,7 @@ export function Header() {
                   : "text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-[#272727]"
               )}
             >
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           ))}
         </nav>

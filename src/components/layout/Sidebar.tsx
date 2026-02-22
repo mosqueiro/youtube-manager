@@ -4,15 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calendar, Settings, Tv, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/useTranslation";
+import { TranslationKey } from "@/lib/i18n";
 
 const navItems = [
-  { href: "/calendar", label: "Calendar", icon: Calendar, desc: "Video schedule" },
-  { href: "/channels", label: "Channels", icon: Tv, desc: "Manage channels" },
-  { href: "/settings", label: "Settings", icon: Settings, desc: "Preferences" },
+  { href: "/calendar", labelKey: "sidebar.calendar" as TranslationKey, icon: Calendar, descKey: "sidebar.calendar.desc" as TranslationKey },
+  { href: "/channels", labelKey: "sidebar.channels" as TranslationKey, icon: Tv, descKey: "sidebar.channels.desc" as TranslationKey },
+  { href: "/settings", labelKey: "sidebar.settings" as TranslationKey, icon: Settings, descKey: "sidebar.settings.desc" as TranslationKey },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[260px] flex-col border-r border-neutral-200 bg-white dark:border-[#3f3f3f] dark:bg-[#0f0f0f] max-md:hidden">
@@ -22,15 +25,15 @@ export function Sidebar() {
           <Youtube className="h-5 w-5 text-white" />
         </div>
         <div>
-          <span className="text-base font-bold tracking-tight">YT Manager</span>
-          <p className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">Content Calendar</p>
+          <span className="text-base font-bold tracking-tight">{t("sidebar.title")}</span>
+          <p className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{t("sidebar.subtitle")}</p>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="mt-4 flex flex-1 flex-col gap-1 px-3">
         <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
-          Menu
+          {t("sidebar.menu")}
         </p>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -60,9 +63,9 @@ export function Sidebar() {
                 <Icon className="h-4 w-4" />
               </div>
               <div>
-                <div className="leading-tight">{item.label}</div>
+                <div className="leading-tight">{t(item.labelKey)}</div>
                 <div className="text-[10px] font-normal text-neutral-400 dark:text-neutral-500">
-                  {item.desc}
+                  {t(item.descKey)}
                 </div>
               </div>
             </Link>
@@ -74,10 +77,10 @@ export function Sidebar() {
       <div className="border-t border-neutral-200 p-4 dark:border-[#3f3f3f]">
         <div className="rounded-xl bg-neutral-50 p-3 dark:bg-[#272727]">
           <p className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300">
-            Pro tip
+            {t("sidebar.proTip")}
           </p>
           <p className="mt-0.5 text-[10px] leading-relaxed text-neutral-400 dark:text-neutral-500">
-            Add channels in Settings, then hit Sync to fetch videos.
+            {t("sidebar.proTipText")}
           </p>
         </div>
       </div>
