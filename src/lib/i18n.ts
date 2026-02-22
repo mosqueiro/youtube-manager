@@ -50,6 +50,9 @@ const translations = {
     "channel.placeholder": "Channel ID, @handle, or YouTube URL...",
     "channel.add": "Add",
     "channel.addError": "Failed to add channel",
+    "channel.needsOAuth": "Google account not connected yet",
+    "channel.needsOAuthHint": "Connect your Google account first so the app can fetch channel data.",
+    "channel.goToSettings": "Go to Settings",
 
     // Sync
     "sync.sync": "Sync",
@@ -137,6 +140,9 @@ const translations = {
     "channel.placeholder": "ID do canal, @handle ou URL do YouTube...",
     "channel.add": "Adicionar",
     "channel.addError": "Falha ao adicionar canal",
+    "channel.needsOAuth": "Conta Google ainda não conectada",
+    "channel.needsOAuthHint": "Conecte sua conta Google primeiro para o app buscar os dados do canal.",
+    "channel.goToSettings": "Ir para Configurações",
 
     // Sync
     "sync.sync": "Sincronizar",
