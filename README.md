@@ -182,6 +182,53 @@ npm run dev
 
 ---
 
+## ☁️ Deploy on EasyPanel
+
+If you have a server with [EasyPanel](https://easypanel.io), you can deploy YouTube Manager in a few clicks.
+
+### 1. Create a new project
+
+- Open your EasyPanel dashboard
+- Click **+ New Project** and name it `youtube-manager`
+
+### 2. Add PostgreSQL
+
+- Inside the project, click **+ New Service** → **Postgres**
+- Keep the default settings (EasyPanel creates the database automatically)
+- Copy the **internal connection URL**, it looks like:
+  ```
+  postgresql://postgres:PASSWORD@youtube-manager_postgres:5432/youtube-manager
+  ```
+
+### 3. Add the App
+
+- Click **+ New Service** → **App**
+- Go to the **General** tab and set:
+  - **Image:** `mosqueiro/yt-manager:latest`
+
+### 4. Configure Environment Variables
+
+- Go to the **Environment** tab and add:
+  | Variable | Value |
+  |---|---|
+  | `DATABASE_URL` | The PostgreSQL connection URL from step 2 |
+  | `YOUTUBE_API_KEY` | Your YouTube API key |
+
+### 5. Configure Domain
+
+- Go to the **Domains** tab
+- Add your domain or use the auto-generated EasyPanel URL
+- Port: **3000**
+
+### 6. Deploy
+
+- Click **Deploy** — EasyPanel will pull the image, start the container, and connect it to PostgreSQL
+- Open the URL and you're ready! 🎉
+
+> 💡 EasyPanel handles SSL, restarts, and logs automatically.
+
+---
+
 ## 🛑 Stopping & Starting
 
 ```bash
