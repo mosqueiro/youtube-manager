@@ -28,6 +28,8 @@ export interface YouTubePlaylistItemsResponse {
       title: string;
       description: string;
       thumbnails: {
+        maxres?: { url: string };
+        high?: { url: string };
         medium?: { url: string };
         default?: { url: string };
       };

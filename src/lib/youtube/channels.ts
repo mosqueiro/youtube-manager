@@ -52,7 +52,7 @@ export async function fetchChannelInfo(channelId: string) {
     id: item.id,
     name: item.snippet.title,
     handle: item.snippet.customUrl || null,
-    avatar_url: item.snippet.thumbnails.default.url,
+    avatar_url: item.snippet.thumbnails.default.url.replace(/=s\d+-/, "=s240-"),
     subscriber_count: parseInt(item.statistics.subscriberCount) || 0,
     uploads_playlist_id: item.contentDetails.relatedPlaylists.uploads,
   };

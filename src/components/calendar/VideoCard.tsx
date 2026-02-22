@@ -56,7 +56,9 @@ export function VideoCard({ video, compact, onClick }: VideoCardProps) {
               alt={video.title}
               fill
               className="object-cover transition-transform group-hover:scale-105"
-              sizes="56px"
+              sizes="128px"
+              quality={90}
+              unoptimized
             />
             {video.duration && (
               <span className="absolute bottom-0.5 right-0.5 rounded bg-black/70 px-1 py-0.5 text-[8px] font-semibold text-white backdrop-blur-sm">

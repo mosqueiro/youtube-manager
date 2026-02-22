@@ -39,8 +39,9 @@ export async function fetchChannelVideos(
       title: item.snippet.title,
       description: item.snippet.description,
       thumbnail_url:
+        item.snippet.thumbnails.maxres?.url ||
+        item.snippet.thumbnails.high?.url ||
         item.snippet.thumbnails.medium?.url ||
-        item.snippet.thumbnails.default?.url ||
         null,
       published_at: item.snippet.publishedAt,
       duration: detail?.duration || null,

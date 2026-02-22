@@ -74,30 +74,31 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
               style={{ gridTemplateColumns: "140px repeat(5, 1fr)" }}
             >
               {/* Channel label */}
-              <div className="flex items-center gap-2.5 bg-neutral-50/80 px-3 py-3 dark:bg-[#1a1a1a]">
-                <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-sm dark:ring-[#272727]">
+              <div className="flex flex-col items-center justify-center gap-2 bg-neutral-50/80 px-3 py-3 dark:bg-[#1a1a1a]">
+                <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-sm dark:ring-[#272727]">
                   {channel.avatar_url ? (
                     <Image
                       src={channel.avatar_url}
                       alt={channel.name}
-                      width={32}
-                      height={32}
+                      width={48}
+                      height={48}
                       className="h-full w-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <div
-                      className="flex h-full w-full items-center justify-center text-xs font-bold text-white"
+                      className="flex h-full w-full items-center justify-center text-sm font-bold text-white"
                       style={{ backgroundColor: channel.color }}
                     >
                       {channel.name[0]}
                     </div>
                   )}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 text-center">
                   <div className="truncate text-xs font-bold text-neutral-700 dark:text-neutral-200">
                     {channel.name}
                   </div>
-                  <div className="mt-0.5 flex items-center gap-1.5">
+                  <div className="mt-0.5 flex items-center justify-center gap-1.5">
                     <div
                       className="h-1.5 w-5 rounded-full"
                       style={{ backgroundColor: channel.color }}
