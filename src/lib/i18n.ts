@@ -19,10 +19,6 @@ const translations = {
     "calendar.today": "Today",
     "calendar.week": "Week",
     "calendar.month": "Month",
-    "calendar.warning":
-      "Dates may not be accurate.",
-    "calendar.warningDetail":
-      "The YouTube API does not always return the correct publish time (e.g. scheduled videos). Click on any video to edit the date/time manually.",
     "calendar.channel": "Channel",
     "calendar.needsVideo": "Needs video",
     "calendar.slotAvailable": "Slot available",
@@ -110,10 +106,6 @@ const translations = {
     "calendar.today": "Hoje",
     "calendar.week": "Semana",
     "calendar.month": "Mês",
-    "calendar.warning":
-      "As datas podem não ser precisas.",
-    "calendar.warningDetail":
-      "A API do YouTube nem sempre retorna o horário correto de publicação (ex: vídeos agendados). Clique em qualquer vídeo para editar a data/hora manualmente.",
     "calendar.channel": "Canal",
     "calendar.needsVideo": "Precisa de vídeo",
     "calendar.slotAvailable": "Vaga disponível",

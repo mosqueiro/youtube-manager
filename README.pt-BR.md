@@ -82,8 +82,7 @@ Você precisa de um Client ID e Secret do Google OAuth para o app buscar dados d
 1. Vá em **"APIs e Serviços"** → **"Tela de consentimento OAuth"** (ou pesquise "Google Auth Platform")
 2. Vá em **"Branding"** e preencha o nome do app e seu email
 3. Vá em **"Audience"** → defina como **External** e deixe no modo **Testing** (não precisa verificar)
-4. Vá em **"Data Access"** → clique em **"Add or Remove Scopes"** → adicione `youtube.readonly` → Salvar
-5. Volte em **"Audience"** → em **"Test users"**, adicione seu email do Google
+4. Em **"Test users"**, adicione seu email do Google
 
 #### 4. Criar Credenciais OAuth
 

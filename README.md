@@ -82,8 +82,7 @@ You need a Google OAuth Client ID and Secret so the app can fetch your channel d
 1. Go to **"APIs & Services"** → **"OAuth consent screen"** (or search for "Google Auth Platform")
 2. Go to **"Branding"** and fill in the app name and your email
 3. Go to **"Audience"** → set to **External** and leave in **Testing** mode (no verification needed)
-4. Go to **"Data Access"** → click **"Add or Remove Scopes"** → add `youtube.readonly` → Save
-5. Go back to **"Audience"** → under **"Test users"**, add your Google email address
+4. Under **"Test users"**, add your Google email address
 
 #### 4. Create OAuth Credentials
 
