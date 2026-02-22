@@ -4,6 +4,7 @@ export interface Video {
   title: string;
   thumbnail_url: string | null;
   published_at: string;
+  scheduled_at?: string | null;
   duration: string | null;
   view_count: number | null;
   like_count?: number;

@@ -23,5 +23,14 @@ export async function GET(req: NextRequest) {
     [start, end]
   );
 
+  // Mark videos with scheduled_at as scheduled for the UI
+  for (const row of rows) {
+    if (row.scheduled_at) {
+      row.scheduled_at = row.scheduled_at.toISOString
+        ? row.scheduled_at.toISOString()
+        : row.scheduled_at;
+    }
+  }
+
   return NextResponse.json(rows);
 }

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         // Get uploads playlist ID
         const info = await fetchChannelInfo(channel.id);
         console.log("[sync] Channel info:", info.name, "uploads:", info.uploads_playlist_id);
-        const videos = await fetchChannelVideos(info.uploads_playlist_id, 50);
+        const videos = await fetchChannelVideos(info.uploads_playlist_id, 50, channel.id);
         console.log("[sync] Videos fetched:", videos.length);
 
         let newCount = 0;
@@ -39,6 +39,17 @@ export async function POST(request: Request) {
           const utcDate = new Date(video.published_at);
           const localMs = utcDate.getTime() + utcOffset * 3600000;
           const localPublishedAt = new Date(localMs).toISOString();
+
+          // For scheduled videos, use scheduled_at as the calendar date
+          let localScheduledAt: string | null = null;
+          if (video.scheduled_at) {
+            const utcScheduled = new Date(video.scheduled_at);
+            const localScheduledMs = utcScheduled.getTime() + utcOffset * 3600000;
+            localScheduledAt = new Date(localScheduledMs).toISOString();
+          }
+
+          // If video is scheduled, use scheduled_at as published_at for calendar placement
+          const calendarDate = localScheduledAt || localPublishedAt;
 
           // Download thumbnail locally (fallback to remote URL on failure)
           let thumbnailUrl = video.thumbnail_url;
@@ -52,12 +63,13 @@ export async function POST(request: Request) {
 
           // Upsert video
           const res = await pool.query(
-            `INSERT INTO videos (id, channel_id, title, thumbnail_url, published_at, duration, view_count, like_count, comment_count, description, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            `INSERT INTO videos (id, channel_id, title, thumbnail_url, published_at, scheduled_at, duration, view_count, like_count, comment_count, description, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
              ON CONFLICT (id) DO UPDATE SET
                title = EXCLUDED.title,
                thumbnail_url = EXCLUDED.thumbnail_url,
                published_at = EXCLUDED.published_at,
+               scheduled_at = EXCLUDED.scheduled_at,
                duration = EXCLUDED.duration,
                view_count = EXCLUDED.view_count,
                like_count = EXCLUDED.like_count,
@@ -70,7 +82,8 @@ export async function POST(request: Request) {
               channel.id,
               video.title,
               thumbnailUrl,
-              localPublishedAt,
+              calendarDate,
+              localScheduledAt,
               video.duration,
               video.view_count,
               video.like_count,

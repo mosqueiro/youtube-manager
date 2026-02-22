@@ -6,10 +6,19 @@ import { AddChannelForm } from "@/components/channels/AddChannelForm";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Tv } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function ChannelsPage() {
   const { channels, loading, addChannel, updateChannel, removeChannel } = useChannels();
   const { t } = useTranslation();
+  const [oauthConfigured, setOauthConfigured] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/status")
+      .then((r) => r.json())
+      .then((d) => setOauthConfigured(d.configured))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -50,6 +59,7 @@ export default function ChannelsPage() {
               channel={channel}
               onRemove={removeChannel}
               onUpdate={updateChannel}
+              oauthConfigured={oauthConfigured}
             />
           ))}
         </div>

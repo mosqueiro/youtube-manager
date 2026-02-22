@@ -6,9 +6,11 @@ import { ChannelCard } from "@/components/channels/ChannelCard";
 import { useSync } from "@/hooks/useSync";
 import { useAppStore } from "@/lib/store";
 import { format } from "date-fns";
-import { Info, Globe, Clock, Tv, Languages } from "lucide-react";
+import { Info, Globe, Clock, Tv, Languages, CheckCircle2, XCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Locale } from "@/lib/i18n";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 const UTC_OPTIONS = [
   { value: -12, label: "UTC-12" },
@@ -40,6 +42,14 @@ const UTC_OPTIONS = [
 ];
 
 export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsContent />
+    </Suspense>
+  );
+}
+
+function SettingsContent() {
   const { channels, addChannel, updateChannel, removeChannel } = useChannels();
   const { lastSync } = useSync();
   const utcOffset = useAppStore((s) => s.utcOffset);
@@ -47,6 +57,28 @@ export default function SettingsPage() {
   const locale = useAppStore((s) => s.locale);
   const setLocale = useAppStore((s) => s.setLocale);
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
+
+  const [oauthConfigured, setOauthConfigured] = useState(false);
+  const [oauthMessage, setOauthMessage] = useState<string | null>(null);
+  const [refreshOAuthKey, setRefreshOAuthKey] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/auth/status")
+      .then((r) => r.json())
+      .then((d) => setOauthConfigured(d.configured))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const oauth = searchParams.get("oauth");
+    if (oauth === "success") {
+      setOauthMessage("success");
+      setRefreshOAuthKey((k) => k + 1);
+    } else if (oauth === "error") {
+      setOauthMessage("error");
+    }
+  }, [searchParams]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -56,6 +88,24 @@ export default function SettingsPage() {
           {t("settings.subtitle")}
         </p>
       </div>
+
+      {/* OAuth message */}
+      {oauthMessage === "success" && (
+        <div className="flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-sm dark:bg-green-500/5">
+          <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" />
+          <p className="font-semibold text-green-700 dark:text-green-400">
+            {t("settings.oauthSuccess")}
+          </p>
+        </div>
+      )}
+      {oauthMessage === "error" && (
+        <div className="flex items-center gap-3 rounded-2xl bg-red-50 p-4 text-sm dark:bg-red-500/5">
+          <XCircle className="h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
+          <p className="font-semibold text-red-700 dark:text-red-400">
+            {t("settings.oauthError")}
+          </p>
+        </div>
+      )}
 
       {/* Language */}
       <section className="space-y-3">
@@ -163,6 +213,8 @@ export default function SettingsPage() {
                 channel={channel}
                 onRemove={removeChannel}
                 onUpdate={updateChannel}
+                oauthConfigured={oauthConfigured}
+                refreshOAuthKey={refreshOAuthKey}
               />
             ))}
           </div>

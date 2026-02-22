@@ -62,6 +62,13 @@ async function runMigrations() {
     await client.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS videos_per_day INTEGER DEFAULT 1`);
     await client.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS like_count BIGINT DEFAULT 0`);
     await client.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS comment_count BIGINT DEFAULT 0`);
+    await client.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `);
   } finally {
     client.release();
   }

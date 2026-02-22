@@ -66,6 +66,7 @@ export interface YouTubeVideoDetailsResponse {
     };
     status: {
       privacyStatus: string;
+      publishAt?: string;
     };
   }[];
 }

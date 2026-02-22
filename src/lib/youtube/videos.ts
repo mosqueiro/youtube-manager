@@ -1,4 +1,4 @@
-import { youtubeGet } from "./client";
+import { youtubeGet, youtubeGetAuth } from "./client";
 import {
   YouTubePlaylistItemsResponse,
   YouTubeVideoDetailsResponse,
@@ -6,17 +6,27 @@ import {
 
 export async function fetchChannelVideos(
   uploadsPlaylistId: string,
-  maxResults: number = 50
+  maxResults: number = 50,
+  channelId?: string
 ) {
-  // Fetch playlist items (uploads) — just to get video IDs
-  const playlistRes = await youtubeGet<YouTubePlaylistItemsResponse>(
-    "playlistItems",
-    {
+  // Try OAuth first (can see scheduled/private videos), fall back to API key
+  const playlistRes =
+    (channelId
+      ? await youtubeGetAuth<YouTubePlaylistItemsResponse>(
+          "playlistItems",
+          {
+            part: "snippet",
+            playlistId: uploadsPlaylistId,
+            maxResults: String(maxResults),
+          },
+          channelId
+        )
+      : null) ??
+    (await youtubeGet<YouTubePlaylistItemsResponse>("playlistItems", {
       part: "snippet",
       playlistId: uploadsPlaylistId,
       maxResults: String(maxResults),
-    }
-  );
+    }));
 
   if (!playlistRes.items || playlistRes.items.length === 0) {
     return [];
@@ -28,8 +38,7 @@ export async function fetchChannelVideos(
   );
 
   // Fetch full video details (snippet + stats + duration)
-  // snippet.publishedAt from videos.list = actual publish date
-  const details = await fetchVideoDetails(videoIds);
+  const details = await fetchVideoDetails(videoIds, channelId);
 
   // Build from videos.list data (accurate publishedAt)
   return videoIds
@@ -42,6 +51,7 @@ export async function fetchChannelVideos(
         description: detail.description,
         thumbnail_url: detail.thumbnailUrl,
         published_at: detail.publishedAt,
+        scheduled_at: detail.scheduledAt || null,
         duration: detail.duration || null,
         view_count: detail.viewCount ? parseInt(detail.viewCount) : 0,
         like_count: detail.likeCount ? parseInt(detail.likeCount) : 0,
@@ -52,7 +62,7 @@ export async function fetchChannelVideos(
     .filter((v) => v !== null);
 }
 
-async function fetchVideoDetails(videoIds: string[]) {
+async function fetchVideoDetails(videoIds: string[], channelId?: string) {
   const map = new Map<
     string,
     {
@@ -60,6 +70,7 @@ async function fetchVideoDetails(videoIds: string[]) {
       description: string;
       thumbnailUrl: string | null;
       publishedAt: string;
+      scheduledAt: string | null;
       duration: string;
       viewCount: string;
       likeCount?: string;
@@ -71,13 +82,28 @@ async function fetchVideoDetails(videoIds: string[]) {
   // Process in batches of 50
   for (let i = 0; i < videoIds.length; i += 50) {
     const batch = videoIds.slice(i, i + 50);
-    const res = await youtubeGet<YouTubeVideoDetailsResponse>("videos", {
-      part: "snippet,contentDetails,statistics,status",
-      id: batch.join(","),
-    });
+
+    // Try OAuth first (returns status.publishAt for scheduled videos)
+    const res =
+      (channelId
+        ? await youtubeGetAuth<YouTubeVideoDetailsResponse>(
+            "videos",
+            {
+              part: "snippet,contentDetails,statistics,status",
+              id: batch.join(","),
+            },
+            channelId
+          )
+        : null) ??
+      (await youtubeGet<YouTubeVideoDetailsResponse>("videos", {
+        part: "snippet,contentDetails,statistics,status",
+        id: batch.join(","),
+      }));
 
     for (const item of res.items) {
       const thumbs = item.snippet.thumbnails;
+      const publishAt = item.status.publishAt || null;
+
       map.set(item.id, {
         title: item.snippet.title,
         description: item.snippet.description,
@@ -88,6 +114,7 @@ async function fetchVideoDetails(videoIds: string[]) {
           thumbs.default?.url ||
           null,
         publishedAt: item.snippet.publishedAt,
+        scheduledAt: publishAt,
         duration: item.contentDetails.duration,
         viewCount: item.statistics.viewCount,
         likeCount: item.statistics.likeCount,
