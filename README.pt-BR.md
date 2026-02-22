@@ -115,17 +115,9 @@ curl -fsSL https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/inst
 
 #### 🪟 Windows
 
-**Opção A** — Baixe e dê duplo clique:
-
 1. Crie uma pasta no seu PC (ex: `C:\yt-manager`)
 2. Baixe o **[install.zip](https://github.com/mosqueiro/youtube-manager/raw/main/install/install.zip)** e extraia o `install.bat` para dentro dessa pasta
 3. Dê duplo clique no `install.bat` — ele configura tudo dentro dessa pasta
-
-**Opção B** — PowerShell:
-
-```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/install/install.bat" -OutFile install.bat; .\install.bat
-```
 
 > O instalador vai: pedir suas credenciais OAuth → criar a pasta do projeto → baixar as imagens Docker → iniciar o PostgreSQL + o app → abrir **http://localhost:3000** no seu navegador. Pronto! 🎉
 
