@@ -83,8 +83,8 @@ curl -fsSL https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/inst
 
 **Option A** — Download and double-click:
 
-1. Download **[install.bat](https://github.com/mosqueiro/youtube-manager/raw/main/install/install.bat)**
-2. Double-click the file to run it
+1. Download **[install.zip](https://github.com/mosqueiro/youtube-manager/raw/main/install/install.zip)**
+2. Extract and double-click `install.bat`
 
 **Option B** — PowerShell:
 
