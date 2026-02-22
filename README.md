@@ -67,12 +67,34 @@ You need a YouTube API Key so the app can fetch channel and video data. It's fre
 
 ---
 
-### 📦 Installation
+### 📦 Quick Install (Recommended)
+
+Just run **one command** — it will ask for your API key, download everything, and start the app automatically.
+
+#### 🍎 macOS / 🐧 Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/install/install.sh | bash
+```
+
+#### 🪟 Windows (PowerShell)
+
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/install/install.bat" -OutFile "$env:TEMP\install.bat"; Start-Process "$env:TEMP\install.bat"
+```
+
+> The installer will: ask for your API key → create the project folder → download the Docker images → start PostgreSQL + the app → open **http://localhost:3000** in your browser. Done! 🎉
+
+---
+
+### 📦 Manual Installation (For Developers)
+
+If you prefer to run from source:
 
 **1. Clone the repository**
 
 ```bash
-git clone https://github.com/your-username/youtube-manager.git
+git clone https://github.com/mosqueiro/youtube-manager.git
 cd youtube-manager
 ```
 
@@ -153,20 +175,13 @@ npm run dev
 
 ---
 
-## 🛑 Stopping the App
+## 🛑 Stopping & Starting
 
 ```bash
-# Stop the database
-docker compose down
+cd ~/youtube-manager   # or wherever you installed it
 
-# The dev server can be stopped with Ctrl+C
-```
-
-To start again later, just run:
-
-```bash
-docker compose up -d
-npm run dev
+docker compose down    # stop everything
+docker compose up -d   # start again
 ```
 
 Your data is preserved — no need to re-sync! 🎉
