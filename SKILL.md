@@ -1,7 +1,7 @@
 ---
 name: youtube-manager-setup
 description: Install, run, update, and manage YouTube Manager via Docker. Use when a user wants to set up YouTube Manager on their computer, check for updates, or troubleshoot the installation.
-version: 0.0.2
+version: 0.0.3
 ---
 
 # YouTube Manager — AI Setup Guide
@@ -11,7 +11,7 @@ The app runs entirely locally — nothing is sent to external servers except You
 
 ## Current Version
 
-**0.0.2**
+**0.0.3**
 
 The Docker image is `mosqueiro/yt-manager:latest` on Docker Hub.
 
