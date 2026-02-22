@@ -83,6 +83,9 @@ export function Sidebar() {
             {t("sidebar.proTipText")}
           </p>
         </div>
+        <p className="mt-2 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
+          v0.0.2
+        </p>
       </div>
     </aside>
   );
