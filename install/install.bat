@@ -46,17 +46,11 @@ if "!API_KEY!"=="" (
 
 echo   ✔  API Key received
 
-:: ── 3. Choose install directory ──────────────
-set "DEFAULT_DIR=%USERPROFILE%\youtube-manager"
+:: ── 3. Use current folder ────────────────────
 echo.
-set /p INSTALL_DIR="  Install directory [%DEFAULT_DIR%]: "
-
-if "!INSTALL_DIR!"=="" set "INSTALL_DIR=%DEFAULT_DIR%"
-
-if not exist "!INSTALL_DIR!" mkdir "!INSTALL_DIR!"
-cd /d "!INSTALL_DIR!"
-
-echo   ✔  Directory: !INSTALL_DIR!
+echo   All files will be created in the current folder:
+echo   → %CD%
+echo.
 
 :: ── 4. Create .env ───────────────────────────
 (
@@ -75,6 +69,8 @@ echo   ✔  .env created
     echo     environment:
     echo       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/youtube_manager
     echo       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+    echo     volumes:
+    echo       - images:/app/public/images
     echo     depends_on:
     echo       postgres:
     echo         condition: service_healthy
@@ -97,6 +93,7 @@ echo   ✔  .env created
     echo.
     echo volumes:
     echo   pgdata:
+    echo   images:
 ) > docker-compose.yml
 
 echo   ✔  docker-compose.yml created
@@ -123,8 +120,7 @@ echo   ║   → http://localhost:3000                 ║
 echo   ║                                           ║
 echo   ╚═══════════════════════════════════════════╝
 echo.
-echo   Useful commands:
-echo     cd !INSTALL_DIR!
+echo   Useful commands (run from this folder^):
 echo     docker compose logs -f     # view logs
 echo     docker compose down        # stop
 echo     docker compose up -d       # start again

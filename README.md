@@ -83,8 +83,9 @@ curl -fsSL https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/inst
 
 **Option A** — Download and double-click:
 
-1. Download **[install.zip](https://github.com/mosqueiro/youtube-manager/raw/main/install/install.zip)**
-2. Extract and double-click `install.bat`
+1. Create a folder on your PC (e.g. `C:\yt-manager`)
+2. Download **[install.zip](https://github.com/mosqueiro/youtube-manager/raw/main/install/install.zip)** and extract `install.bat` into that folder
+3. Double-click `install.bat` — it will configure everything inside that folder
 
 **Option B** — PowerShell:
 

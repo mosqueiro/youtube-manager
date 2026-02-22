@@ -135,6 +135,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/youtube_manager
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+    volumes:
+      - images:/app/public/images
     depends_on:
       postgres:
         condition: service_healthy
@@ -157,6 +159,7 @@ services:
 
 volumes:
   pgdata:
+  images:
 EOF
 
 echo "  ✔  docker-compose.yml created"
