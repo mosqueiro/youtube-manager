@@ -77,10 +77,17 @@ Just run **one command** — it will ask for your API key, download everything, 
 curl -fsSL https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/install/install.sh | bash
 ```
 
-#### 🪟 Windows (PowerShell)
+#### 🪟 Windows
+
+**Option A** — Download and double-click:
+
+1. Download **[install.bat](https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/install/install.bat)**
+2. Double-click the file to run it
+
+**Option B** — PowerShell:
 
 ```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/install/install.bat" -OutFile "$env:TEMP\install.bat"; Start-Process "$env:TEMP\install.bat"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/install/install.bat" -OutFile install.bat; .\install.bat
 ```
 
 > The installer will: ask for your API key → create the project folder → download the Docker images → start PostgreSQL + the app → open **http://localhost:3000** in your browser. Done! 🎉
