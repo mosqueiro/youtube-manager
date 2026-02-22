@@ -10,31 +10,87 @@ echo "  ▶  YouTube Manager — Installer"
 echo "  ─────────────────────────────────"
 echo ""
 
-# ── 1. Check Docker ──────────────────────────
+# ── 1. Install Docker if needed ──────────────
 if ! command -v docker &>/dev/null; then
-  echo "  ✖  Docker not found."
+  echo "  ⚙  Docker not found. Installing..."
   echo ""
+
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "  Install Docker Desktop:"
-    echo "  https://www.docker.com/products/docker-desktop/"
+    # macOS — install via Homebrew
+    if ! command -v brew &>/dev/null; then
+      echo "  ⚙  Homebrew not found. Installing Homebrew first..."
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      # Add brew to PATH for Apple Silicon
+      if [ -f /opt/homebrew/bin/brew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+      fi
+    fi
+    echo "  ⚙  Installing Docker Desktop via Homebrew..."
+    brew install --cask docker
+    echo ""
+    echo "  ✔  Docker Desktop installed!"
+    echo "     Opening Docker Desktop — wait for it to start..."
+    open -a Docker
+    # Wait for Docker to be ready
+    echo -n "  ⏳ Waiting for Docker to start"
+    for i in $(seq 1 60); do
+      if docker info &>/dev/null 2>&1; then
+        break
+      fi
+      echo -n "."
+      sleep 2
+    done
+    echo ""
+    if ! docker info &>/dev/null 2>&1; then
+      echo "  ✖  Docker is taking too long to start."
+      echo "     Open Docker Desktop manually, wait until it's running, then run this script again."
+      exit 1
+    fi
+
   else
-    echo "  Install Docker:"
-    echo "    curl -fsSL https://get.docker.com | sh"
-    echo "    sudo usermod -aG docker \$USER"
-    echo "  Then log out and back in, and run this script again."
+    # Linux (Ubuntu/Debian) — install via official script
+    echo "  ⚙  Installing Docker via get.docker.com..."
+    curl -fsSL https://get.docker.com | sudo sh
+    sudo usermod -aG docker "$USER"
+    echo ""
+    echo "  ✔  Docker installed!"
+    echo "  ⚙  Starting Docker service..."
+    sudo systemctl enable docker
+    sudo systemctl start docker
+    # Allow current session to use docker without re-login
+    if ! docker info &>/dev/null 2>&1; then
+      echo ""
+      echo "  ⚠  Docker was installed, but you need to log out and back in"
+      echo "     for group permissions to take effect."
+      echo "     Or run: newgrp docker"
+      echo "     Then run this script again."
+      exit 1
+    fi
   fi
-  echo ""
-  exit 1
 fi
 
-if ! docker info &>/dev/null; then
-  echo "  ✖  Docker is installed but not running."
-  echo "     Please start Docker and run this script again."
-  echo ""
-  exit 1
+# Check Docker is running
+if ! docker info &>/dev/null 2>&1; then
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "  ⚙  Docker is not running. Opening Docker Desktop..."
+    open -a Docker
+    echo -n "  ⏳ Waiting for Docker to start"
+    for i in $(seq 1 60); do
+      if docker info &>/dev/null 2>&1; then
+        break
+      fi
+      echo -n "."
+      sleep 2
+    done
+    echo ""
+  fi
+  if ! docker info &>/dev/null 2>&1; then
+    echo "  ✖  Docker is not running. Please start Docker and try again."
+    exit 1
+  fi
 fi
 
-echo "  ✔  Docker found"
+echo "  ✔  Docker is ready"
 
 # ── 2. Ask for YouTube API Key ───────────────
 echo ""
