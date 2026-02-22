@@ -24,11 +24,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>
-          <Sidebar />
-          <div className="md:pl-[260px]">
-            <Header />
-            <main className="p-4 md:p-8">{children}</main>
-          </div>
+          {children}
         </ThemeProvider>
       </body>
     </html>

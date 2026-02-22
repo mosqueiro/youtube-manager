@@ -12,6 +12,16 @@
 
 ---
 
+## 📸 Screenshots
+
+![Calendar — Week view with videos per channel](images/1.png)
+
+![Channels — All tracked channels](images/2.png)
+
+![Settings — Add channels, timezone, sync status](images/3.png)
+
+---
+
 ## ✨ What Can You Do With It?
 
 ### 📅 See All Your Channels in One Calendar

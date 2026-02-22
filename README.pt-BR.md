@@ -12,6 +12,16 @@
 
 ---
 
+## 📸 Screenshots
+
+![Calendário — Visualização semanal com vídeos por canal](images/1.png)
+
+![Canais — Todos os canais acompanhados](images/2.png)
+
+![Configurações — Adicionar canais, fuso horário, status do sync](images/3.png)
+
+---
+
 ## ✨ O Que Você Pode Fazer?
 
 ### 📅 Veja Todos os Seus Canais em Um Calendário
