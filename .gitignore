@@ -47,5 +47,6 @@ CLAUDE.md
 # downloaded images (avatars & thumbnails)
 public/images/
 
-# deploy script
+# deploy/release scripts
 deploy.sh
+release.sh
