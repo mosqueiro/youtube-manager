@@ -84,7 +84,7 @@ export function Sidebar() {
           </p>
         </div>
         <p className="mt-2 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
-          v0.0.4
+          v0.0.5
         </p>
       </div>
     </aside>

@@ -2,7 +2,7 @@
 chcp 65001 >nul 2>&1
 setlocal enabledelayedexpansion
 
-set "VERSION=0.0.4"
+set "VERSION=0.0.5"
 set "IMAGE=mosqueiro/yt-manager:%VERSION%"
 
 echo.
