@@ -1,6 +1,6 @@
 services:
   app:
-    image: mosqueiro/yt-manager:0.0.6
+    image: mosqueiro/yt-manager:0.0.7
     ports:
       - "3000:3000"
     environment:
