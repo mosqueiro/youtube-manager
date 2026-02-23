@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="0.0.5"
+VERSION="0.0.6"
 IMAGE="mosqueiro/yt-manager:${VERSION}"
 
 # ─────────────────────────────────────────────
