@@ -269,6 +269,21 @@ Your data is preserved — no need to re-sync! 🎉
 
 ---
 
+## 📁 Persistent Data
+
+The app stores all data in two folders. In Docker, these are mounted as volumes so your data survives container restarts and updates.
+
+| Folder | Docker volume | What's inside |
+|---|---|---|
+| `data/` | `data` → `/app/data` | SQLite database (`youtube-manager.db`) — channels, videos, sync history, Google credentials |
+| `public/images/` | `images` → `/app/public/images` | Downloaded avatars and video thumbnails |
+
+**Running from source (dev):** both folders are created automatically in the project root and are git-ignored.
+
+**Running with Docker:** the `docker-compose.yml` maps named volumes to these paths. As long as you don't run `docker compose down -v` (which deletes volumes), your data persists across updates.
+
+---
+
 ## 🛠️ Built With
 
 | | Technology |

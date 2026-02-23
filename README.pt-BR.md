@@ -269,6 +269,21 @@ Seus dados são preservados — não precisa sincronizar de novo! 🎉
 
 ---
 
+## 📁 Dados Persistentes
+
+O app armazena todos os dados em duas pastas. No Docker, elas são montadas como volumes para que seus dados sobrevivam a reinícios e atualizações.
+
+| Pasta | Volume Docker | O que contém |
+|---|---|---|
+| `data/` | `data` → `/app/data` | Banco SQLite (`youtube-manager.db`) — canais, vídeos, histórico de sync, credenciais Google |
+| `public/images/` | `images` → `/app/public/images` | Avatares e thumbnails dos vídeos baixados |
+
+**Rodando do código fonte (dev):** ambas as pastas são criadas automaticamente na raiz do projeto e estão no git-ignore.
+
+**Rodando com Docker:** o `docker-compose.yml` mapeia volumes nomeados para esses caminhos. Desde que você não rode `docker compose down -v` (que apaga volumes), seus dados persistem entre atualizações.
+
+---
+
 ## 🛠️ Feito Com
 
 | | Tecnologia |

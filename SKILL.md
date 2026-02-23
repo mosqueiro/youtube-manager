@@ -167,11 +167,28 @@ Guide the user through these steps:
 
 ---
 
+## Persistent Data (Docker volumes)
+
+The app has two persistent folders — both must be mapped as Docker volumes:
+
+| Volume | Container path | Contents |
+|---|---|---|
+| `data` | `/app/data` | SQLite database (`youtube-manager.db`) — channels, videos, sync history, Google credentials |
+| `images` | `/app/public/images` | Downloaded channel avatars and video thumbnails |
+
+- `docker compose down` preserves volumes (data safe)
+- `docker compose down -v` **deletes** volumes (data lost)
+- Updating the app image does NOT affect volumes
+
+---
+
 ## Important Notes for the AI
 
 - The app is **read-only** — it cannot post, delete, or modify anything on YouTube
 - All data is stored locally in SQLite (inside Docker volume `data`)
+- Images (avatars, thumbnails) are in Docker volume `images`
 - Google OAuth credentials are stored in the SQLite database (no `.env` file needed)
+- There is NO `.env` file — credentials are entered via the Setup screen in the browser
 - YouTube API quota is only used during Sync, NOT while browsing
 - The free Google tier gives 10,000 units/day (each sync uses ~3-5 units per channel)
 - In Google OAuth Testing mode, tokens expire after 7 days — users need to reconnect
