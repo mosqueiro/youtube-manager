@@ -7,9 +7,7 @@ import { downloadImage } from "@/lib/images";
 export async function POST(request: Request) {
   try {
     ensureTables();
-    const body = await request.json().catch(() => ({}));
-    const utcOffset: number = typeof body.utcOffset === "number" ? body.utcOffset : 0;
-    console.log("[sync] Starting sync, utcOffset:", utcOffset);
+    console.log("[sync] Starting sync");
     const channels = query("SELECT * FROM channels");
     console.log("[sync] Channels found:", channels.length);
 
@@ -39,18 +37,9 @@ export async function POST(request: Request) {
         let newCount = 0;
 
         for (const video of videos) {
-          const utcDate = new Date(video.published_at);
-          const localMs = utcDate.getTime() + utcOffset * 3600000;
-          const localPublishedAt = new Date(localMs).toISOString();
-
-          let localScheduledAt: string | null = null;
-          if (video.scheduled_at) {
-            const utcScheduled = new Date(video.scheduled_at);
-            const localScheduledMs = utcScheduled.getTime() + utcOffset * 3600000;
-            localScheduledAt = new Date(localScheduledMs).toISOString();
-          }
-
-          const calendarDate = localScheduledAt || localPublishedAt;
+          const publishedAt = video.published_at;
+          const scheduledAt = video.scheduled_at || null;
+          const calendarDate = scheduledAt || publishedAt;
 
           let thumbnailUrl = video.thumbnail_url;
           if (video.thumbnail_url) {
@@ -82,7 +71,7 @@ export async function POST(request: Request) {
               video.title,
               thumbnailUrl,
               calendarDate,
-              localScheduledAt,
+              scheduledAt,
               video.duration,
               video.view_count,
               video.like_count,

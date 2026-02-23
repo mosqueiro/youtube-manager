@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Video } from "@/types/video";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
-import { formatDuration, formatViewCount, formatTime } from "@/lib/utils";
+import { formatDuration, formatViewCount, formatTime, toLocalDateObj } from "@/lib/utils";
 import { format } from "date-fns";
 import { ExternalLink, Eye, Clock, Calendar, ThumbsUp, MessageCircle, Pencil, Check, X } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAppStore } from "@/lib/store";
 import Image from "next/image";
 
 interface VideoDetailModalProps {
@@ -18,6 +19,7 @@ interface VideoDetailModalProps {
 
 export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoDetailModalProps) {
   const { t, locale } = useTranslation();
+  const utcOffset = useAppStore((s) => s.utcOffset);
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
@@ -25,16 +27,16 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
 
   if (!video) return null;
 
-  const publishedDate = new Date(video.published_at);
-  const time = formatTime(video.published_at, locale);
+  const publishedDate = toLocalDateObj(video.published_at, utcOffset);
+  const time = formatTime(video.published_at, locale, utcOffset);
 
   function startEditing() {
-    const d = new Date(video!.published_at);
-    const y = d.getFullYear();
-    const mo = String(d.getMonth() + 1).padStart(2, "0");
-    const da = String(d.getDate()).padStart(2, "0");
-    const h = String(d.getHours()).padStart(2, "0");
-    const mi = String(d.getMinutes()).padStart(2, "0");
+    const d = toLocalDateObj(video!.published_at, utcOffset);
+    const y = d.getUTCFullYear();
+    const mo = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const da = String(d.getUTCDate()).padStart(2, "0");
+    const h = String(d.getUTCHours()).padStart(2, "0");
+    const mi = String(d.getUTCMinutes()).padStart(2, "0");
     setEditDate(`${da}/${mo}/${y}`);
     setEditTime(`${h}:${mi}`);
     setEditing(true);
@@ -42,13 +44,15 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
 
   async function saveEdit() {
     if (!editDate || !editTime || !video) return;
-    // Parse dd/mm/yyyy and HH:mm
+    // Parse dd/mm/yyyy and HH:mm as local time, then convert back to UTC
     const parts = editDate.split("/");
     if (parts.length !== 3) return;
     const [dd, mm, yyyy] = parts;
-    const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${editTime}:00`;
-    const parsed = new Date(iso);
-    if (isNaN(parsed.getTime())) return;
+    const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${editTime}:00Z`;
+    const localDate = new Date(iso);
+    if (isNaN(localDate.getTime())) return;
+    // Convert local back to UTC by subtracting the offset
+    const parsed = new Date(localDate.getTime() - utcOffset * 3600000);
 
     setSaving(true);
     try {
@@ -146,7 +150,7 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
           <div className="flex items-center gap-1.5 text-slate-500">
             <Calendar className="h-3.5 w-3.5" />
             <span>
-              {format(publishedDate, "MMM d, yyyy")}
+              {format(new Date(publishedDate.getUTCFullYear(), publishedDate.getUTCMonth(), publishedDate.getUTCDate()), "MMM d, yyyy")}
             </span>
           </div>
           {video.view_count != null && (

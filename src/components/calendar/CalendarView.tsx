@@ -16,11 +16,13 @@ export function CalendarView() {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const syncVersion = useAppStore((s) => s.syncVersion);
+  const utcOffset = useAppStore((s) => s.utcOffset);
   const { videos, loading, fetchVideos, updateVideoPublishedAt } = useVideos();
   const { channels } = useChannels();
   const { days, title, fetchRange, navigate, goToToday } = useCalendar(
     videos,
-    viewMode
+    viewMode,
+    utcOffset
   );
 
   useEffect(() => {

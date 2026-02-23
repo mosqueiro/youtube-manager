@@ -18,8 +18,9 @@ import {
 import { Video } from "@/types/video";
 import { CalendarDay } from "@/types/calendar";
 import { ViewMode } from "@/lib/constants";
+import { toLocalDate } from "@/lib/utils";
 
-export function useCalendar(videos: Video[], viewMode: ViewMode) {
+export function useCalendar(videos: Video[], viewMode: ViewMode, utcOffset: number = 0) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const navigate = useCallback(
@@ -68,8 +69,7 @@ export function useCalendar(videos: Video[], viewMode: ViewMode) {
     return allDays.map((date) => {
       const dayStr = format(date, "yyyy-MM-dd");
       const dayVideos = videos.filter((v) => {
-        const vDate = format(new Date(v.published_at), "yyyy-MM-dd");
-        return vDate === dayStr;
+        return toLocalDate(v.published_at, utcOffset) === dayStr;
       });
 
       return {
@@ -79,7 +79,7 @@ export function useCalendar(videos: Video[], viewMode: ViewMode) {
         videos: dayVideos,
       };
     });
-  }, [dateRange, videos, currentDate]);
+  }, [dateRange, videos, currentDate, utcOffset]);
 
   const title = useMemo(() => {
     if (viewMode === "month") {
@@ -88,14 +88,11 @@ export function useCalendar(videos: Video[], viewMode: ViewMode) {
     return `${format(dateRange.start, "MMM d")} – ${format(dateRange.end, "MMM d, yyyy")}`;
   }, [currentDate, viewMode, dateRange]);
 
-  // For fetching: the actual date range we need data for
+  // For fetching: expand by 1 day each side to cover UTC offset edge cases
   const fetchRange = useMemo(
     () => ({
-      start: format(dateRange.start, "yyyy-MM-dd"),
-      end: format(
-        new Date(dateRange.end.getTime() + 24 * 60 * 60 * 1000),
-        "yyyy-MM-dd"
-      ),
+      start: format(subDays(dateRange.start, 1), "yyyy-MM-dd"),
+      end: format(addDays(dateRange.end, 2), "yyyy-MM-dd"),
     }),
     [dateRange]
   );

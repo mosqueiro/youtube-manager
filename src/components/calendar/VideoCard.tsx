@@ -5,6 +5,7 @@ import { formatDuration, formatTime, formatViewCount } from "@/lib/utils";
 import { Clock, Eye, ThumbsUp, MessageCircle, CalendarClock } from "lucide-react";
 import Image from "next/image";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAppStore } from "@/lib/store";
 
 interface VideoCardProps {
   video: Video;
@@ -14,7 +15,8 @@ interface VideoCardProps {
 
 export function VideoCard({ video, compact, onClick }: VideoCardProps) {
   const { t, locale } = useTranslation();
-  const time = formatTime(video.published_at, locale);
+  const utcOffset = useAppStore((s) => s.utcOffset);
+  const time = formatTime(video.published_at, locale, utcOffset);
   const isScheduled = !!video.scheduled_at;
 
   if (compact) {

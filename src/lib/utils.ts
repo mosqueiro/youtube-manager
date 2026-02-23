@@ -38,13 +38,36 @@ export function extractChannelId(input: string): string {
 
 
 /**
- * Format a time string from a DB timestamp (already in local time).
+ * Convert a UTC date string to a local date string (yyyy-MM-dd) using the given UTC offset.
+ */
+export function toLocalDate(dateStr: string, utcOffset: number): string {
+  const date = new Date(dateStr);
+  const localMs = date.getTime() + utcOffset * 3600000;
+  const local = new Date(localMs);
+  const y = local.getUTCFullYear();
+  const m = String(local.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(local.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Convert a UTC date to a local Date object using the given UTC offset.
+ */
+export function toLocalDateObj(dateStr: string, utcOffset: number): Date {
+  const date = new Date(dateStr);
+  return new Date(date.getTime() + utcOffset * 3600000);
+}
+
+/**
+ * Format a time string from a UTC timestamp, applying the given UTC offset.
  * pt-BR → "HH:mm" (24h), en → "h:mm AM/PM" (12h).
  */
-export function formatTime(dateStr: string | Date, locale: Locale = "en"): string {
+export function formatTime(dateStr: string | Date, locale: Locale = "en", utcOffset: number = 0): string {
   const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
-  const hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const localMs = date.getTime() + utcOffset * 3600000;
+  const local = new Date(localMs);
+  const hours = local.getUTCHours();
+  const minutes = String(local.getUTCMinutes()).padStart(2, "0");
   if (locale === "pt-BR") {
     return `${String(hours).padStart(2, "0")}:${minutes}`;
   }
