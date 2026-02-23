@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const url = getAuthUrl(channelId);
   if (!url) {
     return NextResponse.json(
-      { error: "OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET." },
+      { error: "OAuth not configured. Enter your Google credentials in the Setup screen." },
       { status: 500 }
     );
   }

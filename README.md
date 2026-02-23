@@ -5,7 +5,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)
+![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
 
 🌐 [Português (BR)](README.pt-BR.md)
@@ -53,9 +53,11 @@ Full sidebar navigation on desktop, hamburger menu on mobile. The calendar adapt
 
 Before you begin, make sure you have installed:
 
-- [**Node.js**](https://nodejs.org/) (v18 or later)
-- [**Docker Desktop**](https://www.docker.com/products/docker-desktop/) (for the database)
+- [**Docker Desktop**](https://www.docker.com/products/docker-desktop/) (only requirement for the quick install)
 - **Google OAuth credentials** (free — see below how to get them)
+
+For development from source, you also need:
+- [**Node.js**](https://nodejs.org/) (v18 or later)
 
 ---
 
@@ -105,7 +107,7 @@ You need a Google OAuth Client ID and Secret so the app can fetch your channel d
 
 ### 📦 Quick Install (Recommended)
 
-Just run **one command** — it will ask for your OAuth credentials, download everything, and start the app automatically.
+Just run **one command** — it will download everything and start the app automatically. On first access in the browser, you'll enter your Google OAuth credentials.
 
 #### 🍎 macOS / 🐧 Linux
 
@@ -119,7 +121,7 @@ curl -fsSL https://raw.githubusercontent.com/mosqueiro/youtube-manager/main/inst
 2. Download **[install.zip](https://github.com/mosqueiro/youtube-manager/raw/main/install/install.zip)** and extract `install.bat` into that folder
 3. Double-click `install.bat` — it will configure everything inside that folder
 
-> The installer will: ask for your OAuth credentials → create the project folder → download the Docker images → start PostgreSQL + the app → open **http://localhost:3000** in your browser. Done! 🎉
+> The installer will: create the project folder → download the Docker image → start the app → open **http://localhost:3000** in your browser → you enter your Google credentials in the Setup screen. Done! 🎉
 
 ---
 
@@ -140,38 +142,17 @@ cd youtube-manager
 npm install
 ```
 
-**3. Set up your environment**
-
-```bash
-cp .env.example .env.local
-```
-
-Open `.env.local` and fill in your Google OAuth credentials:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5435/youtube_manager
-
-# Google OAuth (from step 4 above)
-GOOGLE_CLIENT_ID=paste_your_client_id_here
-GOOGLE_CLIENT_SECRET=paste_your_client_secret_here
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback
-```
-
-**4. Start the database**
-
-```bash
-docker compose up -d
-```
-
-**5. Start the app**
+**3. Start the app**
 
 ```bash
 npm run dev
 ```
 
-**6. Open your browser** at **http://localhost:3000** 🎉
+**4. Open your browser** at **http://localhost:3000** 🎉
 
-> The database tables are created automatically — no extra setup needed!
+On first access, you'll be redirected to the **Setup screen** where you enter your Google OAuth Client ID and Client Secret. These are saved in the local SQLite database — no `.env` file needed!
+
+> The database (SQLite) and tables are created automatically in the `data/` folder — no Docker or external database needed for development!
 
 ---
 
@@ -235,13 +216,7 @@ If you have a server with [EasyPanel](https://easypanel.io), you can deploy YouT
 - Open your EasyPanel dashboard
 - Click **+ New Project** and name it `youtube-manager`
 
-### 2. Add PostgreSQL
-
-- Inside the project, click **+ New Service** → **Postgres**
-- Keep the default settings (EasyPanel creates the database automatically)
-- Copy the **internal connection URL** — you'll need it in step 4
-
-### 3. Add the App
+### 2. Add the App
 
 - Click **+ New Service** → **App**
 - Go to the **Build** tab and select **GitHub**
@@ -254,14 +229,16 @@ If you have a server with [EasyPanel](https://easypanel.io), you can deploy YouT
   | Path | `/` |
 - EasyPanel will detect the `Dockerfile` and build the image automatically
 
-### 4. Configure Environment Variables
+### 3. Configure Volumes
 
-- Go to the **Environment** tab and add:
+- Add a persistent volume for the SQLite database: mount `/app/data`
+- Add a persistent volume for images: mount `/app/public/images`
+
+### 4. Configure Environment Variables (optional)
+
+- Only needed if your domain is not localhost:
   | Variable | Value |
   |---|---|
-  | `DATABASE_URL` | The PostgreSQL connection URL from step 2 |
-  | `GOOGLE_CLIENT_ID` | Your OAuth Client ID |
-  | `GOOGLE_CLIENT_SECRET` | Your OAuth Client Secret |
   | `GOOGLE_REDIRECT_URI` | `https://yourdomain.com/api/auth/callback` |
 
 ### 5. Configure Domain
@@ -272,8 +249,8 @@ If you have a server with [EasyPanel](https://easypanel.io), you can deploy YouT
 
 ### 6. Deploy
 
-- Click **Deploy** — EasyPanel will clone the repo, build the image, and connect it to PostgreSQL
-- Open the URL and you're ready! 🎉
+- Click **Deploy** — EasyPanel will clone the repo, build the image, and start the app
+- Open the URL — on first access you'll enter your Google credentials in the Setup screen 🎉
 
 > 💡 EasyPanel handles SSL, restarts, and auto-deploy on new commits.
 
@@ -299,7 +276,7 @@ Your data is preserved — no need to re-sync! 🎉
 | ⚡ | Next.js 16 |
 | 🔷 | TypeScript |
 | 🎨 | Tailwind CSS 4 |
-| 🐘 | PostgreSQL 16 |
+| 🗄️ | SQLite (better-sqlite3) |
 | 📺 | YouTube Data API v3 |
 | 📦 | Zustand |
 | 📆 | date-fns |
@@ -319,7 +296,10 @@ No. It's completely **read-only**. It uses the `youtube.readonly` scope — it c
 Yes! Click **"Connect with Google"** on each channel card. Once connected, the app can see scheduled videos and shows them on the calendar with a yellow "Scheduled" badge.
 
 **Q: Where is my data stored?**
-Everything is stored in a **local PostgreSQL database** running in Docker on your machine. Nothing is sent to external servers (except the YouTube API calls during sync).
+Everything is stored in a **local SQLite database** (`data/youtube-manager.db`). In Docker, this is persisted via the `data` volume. Nothing is sent to external servers (except the YouTube API calls during sync).
+
+**Q: Where are my Google credentials stored?**
+Your Google OAuth Client ID and Client Secret are stored in the SQLite database (in the `settings` table). No `.env` file is needed.
 
 **Q: How many videos does it fetch per channel?**
 The last **50 videos** per channel on each sync.
@@ -340,5 +320,5 @@ MIT
 
 <p align="center">
   Built with ❤️ and ☕<br/>
-  Powered by <strong>YouTube Data API v3</strong> + <strong>Next.js</strong> + <strong>PostgreSQL</strong>
+  Powered by <strong>YouTube Data API v3</strong> + <strong>Next.js</strong> + <strong>SQLite</strong>
 </p>
