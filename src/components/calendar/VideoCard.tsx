@@ -13,8 +13,8 @@ interface VideoCardProps {
 }
 
 export function VideoCard({ video, compact, onClick }: VideoCardProps) {
-  const time = formatTime(video.published_at);
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const time = formatTime(video.published_at, locale);
   const isScheduled = !!video.scheduled_at;
 
   if (compact) {

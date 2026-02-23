@@ -17,7 +17,7 @@ interface VideoDetailModalProps {
 }
 
 export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoDetailModalProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
@@ -26,7 +26,7 @@ export function VideoDetailModal({ video, onClose, onUpdatePublishedAt }: VideoD
   if (!video) return null;
 
   const publishedDate = new Date(video.published_at);
-  const time = formatTime(video.published_at);
+  const time = formatTime(video.published_at, locale);
 
   function startEditing() {
     const d = new Date(video!.published_at);

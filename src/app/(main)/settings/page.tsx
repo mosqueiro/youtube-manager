@@ -6,6 +6,7 @@ import { ChannelCard } from "@/components/channels/ChannelCard";
 import { useSync } from "@/hooks/useSync";
 import { useAppStore } from "@/lib/store";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Info, Globe, Clock, Tv, Languages, CheckCircle2, XCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Locale } from "@/lib/i18n";
@@ -239,7 +240,9 @@ function SettingsContent() {
             <div>
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 {lastSync
-                  ? format(new Date(lastSync), "MMM d, yyyy 'at' h:mm a")
+                  ? locale === "pt-BR"
+                    ? format(new Date(lastSync), "d 'de' MMM, yyyy 'às' HH:mm", { locale: ptBR })
+                    : format(new Date(lastSync), "MMM d, yyyy 'at' h:mm a")
                   : t("settings.neverSynced")}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500">

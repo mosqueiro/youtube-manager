@@ -1,12 +1,15 @@
 #!/bin/bash
 set -e
 
+VERSION="0.0.4"
+IMAGE="mosqueiro/yt-manager:${VERSION}"
+
 # ─────────────────────────────────────────────
 #  YouTube Manager — Installer (macOS / Linux)
 # ─────────────────────────────────────────────
 
 echo ""
-echo "  ▶  YouTube Manager — Setup"
+echo "  ▶  YouTube Manager v${VERSION} — Setup"
 echo "  ─────────────────────────────────"
 echo ""
 
@@ -100,17 +103,16 @@ if [ "$EXISTING" = true ]; then
 
   # Gather info about existing installation
   HAS_CONTAINERS=false
-  HAS_DB_VOLUME=false
+  HAS_DATA_VOLUME=false
   HAS_IMG_VOLUME=false
-  PROJECT_NAME=$(basename "$INSTALL_DIR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
 
-  if docker compose ps --status running 2>/dev/null | grep -q "yt-manager\|postgres"; then
+  if docker compose ps --status running 2>/dev/null | grep -q "yt-manager"; then
     HAS_CONTAINERS=true
   fi
 
-  # Check for volumes (project-name prefixed)
-  if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -q "pgdata"; then
-    HAS_DB_VOLUME=true
+  # Check for volumes
+  if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -q "data"; then
+    HAS_DATA_VOLUME=true
   fi
   if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -q "images"; then
     HAS_IMG_VOLUME=true
@@ -129,7 +131,7 @@ if [ "$EXISTING" = true ]; then
     echo "  Containers: stopped"
   fi
 
-  if [ "$HAS_DB_VOLUME" = true ]; then
+  if [ "$HAS_DATA_VOLUME" = true ]; then
     echo "  Database: found (has data)"
   else
     echo "  Database: not found"
@@ -147,7 +149,7 @@ if [ "$EXISTING" = true ]; then
   echo ""
   echo "  What would you like to do?"
   echo ""
-  echo "  1) Update — download latest version (keeps your local data)"
+  echo "  1) Update to v${VERSION} (keeps your local data)"
   echo "  2) Reset local database — clears saved channels/videos from this app"
   echo "  3) Uninstall — remove the app from this computer"
   echo "  4) Cancel"
@@ -158,27 +160,30 @@ if [ "$EXISTING" = true ]; then
     1)
       # ── UPDATE ──────────────────────────────
       echo ""
-      echo "  ⚙  Updating YouTube Manager..."
+      echo "  ⚙  Updating YouTube Manager to v${VERSION}..."
       echo ""
       echo "  ⚙  Stopping containers..."
       docker compose down 2>/dev/null || true
       echo "  ✔  Containers stopped"
 
       echo "  ⚙  Removing old app image..."
-      docker rmi mosqueiro/yt-manager:latest 2>/dev/null || true
+      docker images --format '{{.Repository}}:{{.Tag}}' | grep "mosqueiro/yt-manager" | xargs -r docker rmi 2>/dev/null || true
       echo "  ✔  Old image removed"
 
+      # Update docker-compose.yml to new version
+      sed -i.bak "s|mosqueiro/yt-manager:[^ ]*|${IMAGE}|g" docker-compose.yml && rm -f docker-compose.yml.bak
+
       echo ""
-      echo "  ⚙  Downloading latest version..."
+      echo "  ⚙  Downloading v${VERSION}..."
       docker compose pull
-      echo "  ✔  Latest images downloaded"
+      echo "  ✔  v${VERSION} downloaded"
 
       echo ""
       echo "  ⚙  Starting YouTube Manager..."
       docker compose up -d
 
       echo ""
-      echo "  ✔  YouTube Manager updated successfully!"
+      echo "  ✔  YouTube Manager updated to v${VERSION}!"
       echo ""
       echo "  ℹ  Your database and images were preserved."
       echo ""
@@ -219,7 +224,7 @@ if [ "$EXISTING" = true ]; then
       echo "  ✔  Containers stopped"
 
       echo "  ⚙  Removing database volume..."
-      docker volume rm "$(docker volume ls --format '{{.Name}}' | grep pgdata)" 2>/dev/null || true
+      docker volume rm "$(docker volume ls --format '{{.Name}}' | grep data)" 2>/dev/null || true
       echo "  ✔  Database removed"
 
       echo ""
@@ -250,9 +255,9 @@ if [ "$EXISTING" = true ]; then
       # ── UNINSTALL ───────────────────────────
       echo ""
       echo "  This will remove YouTube Manager from this computer:"
-      echo "     - App containers and database"
-      echo "     - Downloaded images and Docker images"
-      echo "     - Configuration files (.env, docker-compose.yml)"
+      echo "     - App containers, database, and cached images"
+      echo "     - Docker images"
+      echo "     - Configuration files (docker-compose.yml)"
       echo ""
       echo "  ℹ  Your YouTube account is NOT affected. Nothing is deleted from YouTube."
       echo "     You can reinstall anytime by running this script again."
@@ -269,13 +274,11 @@ if [ "$EXISTING" = true ]; then
       echo "  ✔  Containers and volumes removed"
 
       echo "  ⚙  Removing Docker images..."
-      docker rmi mosqueiro/yt-manager:latest 2>/dev/null || true
-      docker rmi postgres:16-alpine 2>/dev/null || true
+      docker images --format '{{.Repository}}:{{.Tag}}' | grep "mosqueiro/yt-manager" | xargs -r docker rmi 2>/dev/null || true
       echo "  ✔  Images removed"
 
       echo "  ⚙  Removing configuration files..."
       rm -f "$INSTALL_DIR/docker-compose.yml"
-      rm -f "$INSTALL_DIR/.env"
       echo "  ✔  Files removed"
 
       echo ""
@@ -295,28 +298,7 @@ fi
 #  FRESH INSTALL (no existing installation)
 # ══════════════════════════════════════════════
 
-# ── 4. Ask for Google OAuth credentials ──────
-echo ""
-echo "  You need Google OAuth credentials from Google Cloud Console."
-echo "  Follow the guide in the README to create them."
-echo "  https://github.com/mosqueiro/youtube-manager#-how-to-set-up-google-oauth-free"
-echo ""
-read -rp "  Enter your Google OAuth Client ID: " CLIENT_ID
-if [ -z "$CLIENT_ID" ]; then
-  echo "  ✖  Client ID cannot be empty."
-  exit 1
-fi
-
-echo ""
-read -rp "  Enter your Google OAuth Client Secret: " CLIENT_SECRET
-if [ -z "$CLIENT_SECRET" ]; then
-  echo "  ✖  Client Secret cannot be empty."
-  exit 1
-fi
-
-echo "  ✔  Credentials received"
-
-# ── 5. Choose install directory ──────────────
+# ── 4. Choose install directory ──────────────
 DEFAULT_DIR="$HOME/youtube-manager"
 echo ""
 read -rp "  Install directory [$DEFAULT_DIR]: " INSTALL_DIR
@@ -327,75 +309,47 @@ cd "$INSTALL_DIR"
 
 echo "  ✔  Directory: $INSTALL_DIR"
 
-# ── 6. Create .env ───────────────────────────
-cat > .env <<EOF
-GOOGLE_CLIENT_ID=$CLIENT_ID
-GOOGLE_CLIENT_SECRET=$CLIENT_SECRET
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback
-EOF
-
-echo "  ✔  .env created"
-
-# ── 7. Create docker-compose.yml ─────────────
-cat > docker-compose.yml <<'EOF'
+# ── 5. Create docker-compose.yml ─────────────
+cat > docker-compose.yml <<EOF
 services:
   app:
-    image: mosqueiro/yt-manager:latest
+    image: ${IMAGE}
     ports:
       - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/youtube_manager
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     volumes:
+      - data:/app/data
       - images:/app/public/images
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: youtube_manager
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
     restart: unless-stopped
 
 volumes:
-  pgdata:
+  data:
   images:
 EOF
 
 echo "  ✔  docker-compose.yml created"
 
-# ── 8. Pull images ───────────────────────────
+# ── 6. Pull images ───────────────────────────
 echo ""
-echo "  Downloading images (this may take a minute)..."
+echo "  Downloading v${VERSION} (this may take a minute)..."
 docker compose pull
 
-echo "  ✔  Images downloaded"
+echo "  ✔  v${VERSION} downloaded"
 
-# ── 9. Start ─────────────────────────────────
+# ── 7. Start ─────────────────────────────────
 echo ""
 echo "  Starting YouTube Manager..."
 docker compose up -d
 
 echo ""
-echo "  ✔  YouTube Manager is running!"
+echo "  ✔  YouTube Manager v${VERSION} is running!"
 echo ""
 echo "  ╔═══════════════════════════════════════════╗"
 echo "  ║                                           ║"
 echo "  ║   Open in your browser:                   ║"
 echo "  ║   → http://localhost:3000                 ║"
+echo "  ║                                           ║"
+echo "  ║   On first access, you'll be asked to     ║"
+echo "  ║   enter your Google OAuth credentials.    ║"
 echo "  ║                                           ║"
 echo "  ╚═══════════════════════════════════════════╝"
 echo ""

@@ -1,77 +1,117 @@
-import { Pool } from "pg";
+import Database from "better-sqlite3";
+import path from "path";
+import fs from "fs";
 
-const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    "postgresql://postgres:postgres@localhost:5435/youtube_manager",
-  max: 10,
-  idleTimeoutMillis: 30000,
-});
+const DB_PATH = path.join(process.cwd(), "data", "youtube-manager.db");
 
-let migratePromise: Promise<void> | null = null;
+let _db: Database.Database | null = null;
 
-export async function ensureTables() {
-  if (!migratePromise) {
-    migratePromise = runMigrations();
+function getDb(): Database.Database {
+  if (!_db) {
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    _db = new Database(DB_PATH);
+    _db.pragma("journal_mode = WAL");
+    _db.pragma("foreign_keys = ON");
+    ensureTablesSync(_db);
   }
-  return migratePromise;
+  return _db;
 }
 
-async function runMigrations() {
-  const client = await pool.connect();
-  try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS channels (
-        id VARCHAR(30) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        handle VARCHAR(100),
-        avatar_url TEXT,
-        subscriber_count BIGINT,
-        color VARCHAR(7) NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS videos (
-        id VARCHAR(20) PRIMARY KEY,
-        channel_id VARCHAR(30) REFERENCES channels(id) ON DELETE CASCADE,
-        title VARCHAR(500) NOT NULL,
-        thumbnail_url TEXT,
-        published_at TIMESTAMP NOT NULL,
-        duration VARCHAR(20),
-        view_count BIGINT DEFAULT 0,
-        description TEXT,
-        status VARCHAR(20) DEFAULT 'public',
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS sync_log (
-        id SERIAL PRIMARY KEY,
-        channel_id VARCHAR(30) REFERENCES channels(id) ON DELETE CASCADE,
-        synced_at TIMESTAMP DEFAULT NOW(),
-        videos_fetched INTEGER DEFAULT 0,
-        status VARCHAR(20) DEFAULT 'success',
-        error_message TEXT
-      );
-    `);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_videos_channel_id ON videos(channel_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos(published_at)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_sync_log_channel_id ON sync_log(channel_id)`);
-    await client.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS videos_per_day INTEGER DEFAULT 1`);
-    await client.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS like_count BIGINT DEFAULT 0`);
-    await client.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS comment_count BIGINT DEFAULT 0`);
-    await client.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP`);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS settings (
-        key VARCHAR(100) PRIMARY KEY,
-        value TEXT NOT NULL
-      )
-    `);
-  } finally {
-    client.release();
-  }
+function hasColumn(db: Database.Database, table: string, column: string): boolean {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  return cols.some((c) => c.name === column);
 }
 
-export default pool;
+function ensureTablesSync(db: Database.Database) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS channels (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      handle TEXT,
+      avatar_url TEXT,
+      subscriber_count INTEGER,
+      color TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS videos (
+      id TEXT PRIMARY KEY,
+      channel_id TEXT REFERENCES channels(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      thumbnail_url TEXT,
+      published_at TEXT NOT NULL,
+      duration TEXT,
+      view_count INTEGER DEFAULT 0,
+      description TEXT,
+      status TEXT DEFAULT 'public',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sync_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      channel_id TEXT REFERENCES channels(id) ON DELETE CASCADE,
+      synced_at TEXT DEFAULT (datetime('now')),
+      videos_fetched INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'success',
+      error_message TEXT
+    );
+  `);
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_videos_channel_id ON videos(channel_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos(published_at)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_sync_log_channel_id ON sync_log(channel_id)`);
+
+  // Migrations
+  if (!hasColumn(db, "channels", "videos_per_day")) {
+    db.exec(`ALTER TABLE channels ADD COLUMN videos_per_day INTEGER DEFAULT 1`);
+  }
+  if (!hasColumn(db, "videos", "like_count")) {
+    db.exec(`ALTER TABLE videos ADD COLUMN like_count INTEGER DEFAULT 0`);
+  }
+  if (!hasColumn(db, "videos", "comment_count")) {
+    db.exec(`ALTER TABLE videos ADD COLUMN comment_count INTEGER DEFAULT 0`);
+  }
+  if (!hasColumn(db, "videos", "scheduled_at")) {
+    db.exec(`ALTER TABLE videos ADD COLUMN scheduled_at TEXT`);
+  }
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+}
+
+export function ensureTables() {
+  getDb();
+}
+
+export function query<T = Record<string, unknown>>(sql: string, params: unknown[] = []): T[] {
+  const db = getDb();
+  return db.prepare(sql).all(...params) as T[];
+}
+
+export function queryOne<T = Record<string, unknown>>(sql: string, params: unknown[] = []): T | undefined {
+  const db = getDb();
+  return db.prepare(sql).get(...params) as T | undefined;
+}
+
+export function run(sql: string, params: unknown[] = []): Database.RunResult {
+  const db = getDb();
+  return db.prepare(sql).run(...params);
+}
+
+export function getDatabase(): Database.Database {
+  return getDb();
+}
+
+export default { query, queryOne, run, ensureTables, getDatabase };

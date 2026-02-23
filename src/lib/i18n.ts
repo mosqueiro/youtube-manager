@@ -83,13 +83,25 @@ const translations = {
     "settings.notConnected": "Not connected",
     "settings.oauthHint": "Connect your Google account to see scheduled and private videos.",
     "settings.oauthExpired": "Token expired. Please reconnect.",
-    "settings.oauthNotConfigured": "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.local to enable.",
+    "settings.oauthNotConfigured": "Google credentials not configured. Go to Setup to add them.",
     "settings.oauthSuccess": "Google account connected successfully!",
     "settings.oauthError": "Failed to connect Google account.",
     "settings.disconnect": "Disconnect",
     "settings.reconnect": "Reconnect",
     "settings.brandAccountTip": "Rename your brand accounts at",
     "calendar.scheduled": "Scheduled",
+
+    // Setup
+    "setup.title": "Welcome to YT Manager",
+    "setup.subtitle": "Enter your Google OAuth credentials to get started.",
+    "setup.clientId": "Google Client ID",
+    "setup.clientSecret": "Google Client Secret",
+    "setup.save": "Save & Enter",
+    "setup.howToGet": "How to get your credentials",
+    "setup.step1": "Go to Google Cloud Console → Credentials",
+    "setup.step2": "Create an OAuth 2.0 Client ID (Web application)",
+    "setup.step3": "Add http://localhost:3000/api/auth/callback as redirect URI",
+    "setup.step4": "Copy the Client ID and Client Secret here",
   },
   "pt-BR": {
     // Sidebar
@@ -173,13 +185,25 @@ const translations = {
     "settings.notConnected": "Não conectado",
     "settings.oauthHint": "Conecte sua conta Google para ver vídeos agendados e privados.",
     "settings.oauthExpired": "Token expirado. Reconecte sua conta.",
-    "settings.oauthNotConfigured": "Configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no .env.local para ativar.",
+    "settings.oauthNotConfigured": "Credenciais Google não configuradas. Vá para Setup para adicioná-las.",
     "settings.oauthSuccess": "Conta Google conectada com sucesso!",
     "settings.oauthError": "Falha ao conectar conta Google.",
     "settings.disconnect": "Desconectar",
     "settings.reconnect": "Reconectar",
     "settings.brandAccountTip": "Renomeie suas contas de marca em",
     "calendar.scheduled": "Agendado",
+
+    // Setup
+    "setup.title": "Bem-vindo ao YT Manager",
+    "setup.subtitle": "Insira suas credenciais Google OAuth para começar.",
+    "setup.clientId": "Google Client ID",
+    "setup.clientSecret": "Google Client Secret",
+    "setup.save": "Salvar e Entrar",
+    "setup.howToGet": "Como obter suas credenciais",
+    "setup.step1": "Acesse Google Cloud Console → Credenciais",
+    "setup.step2": "Crie um ID de cliente OAuth 2.0 (Aplicativo Web)",
+    "setup.step3": "Adicione http://localhost:3000/api/auth/callback como URI de redirecionamento",
+    "setup.step4": "Copie o Client ID e Client Secret aqui",
   },
 } as const;
 

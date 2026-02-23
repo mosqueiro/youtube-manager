@@ -1,17 +1,30 @@
 import { google } from "googleapis";
-import pool from "@/lib/db";
+import { ensureTables, queryOne } from "@/lib/db";
 
 const SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"];
 
+function getCredentialsFromDb(): { clientId: string; clientSecret: string } | null {
+  try {
+    ensureTables();
+    const idRow = queryOne<{ value: string }>("SELECT value FROM settings WHERE key = ?", ["google_client_id"]);
+    const secretRow = queryOne<{ value: string }>("SELECT value FROM settings WHERE key = ?", ["google_client_secret"]);
+    if (idRow?.value && secretRow?.value) {
+      return { clientId: idRow.value, clientSecret: secretRow.value };
+    }
+  } catch {
+    // DB may not be ready yet
+  }
+  return null;
+}
+
 function getOAuth2Client() {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const creds = getCredentialsFromDb();
+  if (!creds) return null;
+
   const redirectUri =
     process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/callback";
 
-  if (!clientId || !clientSecret) return null;
-
-  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  return new google.auth.OAuth2(creds.clientId, creds.clientSecret, redirectUri);
 }
 
 export function getAuthUrl(channelId: string): string | null {
@@ -34,49 +47,36 @@ export async function exchangeCodeForTokens(code: string) {
   return tokens;
 }
 
-/** Get an authenticated client for a specific channel */
 export async function getAuthenticatedClient(channelId: string) {
   const client = getOAuth2Client();
   if (!client) return null;
 
-  let refreshToken: string | undefined;
-  try {
-    const { rows } = await pool.query(
-      "SELECT value FROM settings WHERE key = $1",
-      [`google_refresh_token:${channelId}`]
-    );
-    if (rows.length > 0) refreshToken = rows[0].value;
-  } catch {
-    // settings table may not exist yet
-  }
+  const row = queryOne<{ value: string }>(
+    "SELECT value FROM settings WHERE key = ?",
+    [`google_refresh_token:${channelId}`]
+  );
 
-  if (!refreshToken) return null;
+  if (!row?.value) return null;
 
-  client.setCredentials({ refresh_token: refreshToken });
+  client.setCredentials({ refresh_token: row.value });
   return client;
 }
 
-/** Get any available authenticated client (uses the first token found) */
 export async function getAnyAuthenticatedClient() {
   const client = getOAuth2Client();
   if (!client) return null;
 
-  let refreshToken: string | undefined;
-  try {
-    const { rows } = await pool.query(
-      "SELECT value FROM settings WHERE key LIKE 'google_refresh_token:%' LIMIT 1"
-    );
-    if (rows.length > 0) refreshToken = rows[0].value;
-  } catch {
-    // settings table may not exist yet
-  }
+  const row = queryOne<{ value: string }>(
+    "SELECT value FROM settings WHERE key LIKE 'google_refresh_token:%' LIMIT 1"
+  );
 
-  if (!refreshToken) return null;
+  if (!row?.value) return null;
 
-  client.setCredentials({ refresh_token: refreshToken });
+  client.setCredentials({ refresh_token: row.value });
   return client;
 }
 
 export function isOAuthConfigured(): boolean {
-  return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  const creds = getCredentialsFromDb();
+  return creds !== null;
 }

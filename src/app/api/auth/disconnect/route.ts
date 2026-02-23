@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool, { ensureTables } from "@/lib/db";
+import { ensureTables, run } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
-    await ensureTables();
+    ensureTables();
     const { channelId } = await req.json();
     if (!channelId) {
       return NextResponse.json({ error: "Missing channelId" }, { status: 400 });
     }
-    await pool.query("DELETE FROM settings WHERE key = $1", [
+    run("DELETE FROM settings WHERE key = ?", [
       `google_refresh_token:${channelId}`,
     ]);
     return NextResponse.json({ success: true });

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool, { ensureTables } from "@/lib/db";
+import { ensureTables, query } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
-  await ensureTables();
+  ensureTables();
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
@@ -14,23 +14,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { rows } = await pool.query(
+  const rows = query(
     `SELECT v.*, c.name as channel_name, c.color as channel_color, c.avatar_url as channel_avatar
      FROM videos v
      JOIN channels c ON v.channel_id = c.id
-     WHERE v.published_at >= $1 AND v.published_at < $2
+     WHERE v.published_at >= ? AND v.published_at < ?
      ORDER BY v.published_at ASC`,
     [start, end]
   );
-
-  // Mark videos with scheduled_at as scheduled for the UI
-  for (const row of rows) {
-    if (row.scheduled_at) {
-      row.scheduled_at = row.scheduled_at.toISOString
-        ? row.scheduled_at.toISOString()
-        : row.scheduled_at;
-    }
-  }
 
   return NextResponse.json(rows);
 }

@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
-import pool, { ensureTables } from "@/lib/db";
+import { ensureTables, query, run } from "@/lib/db";
 import { fetchChannelInfo } from "@/lib/youtube/channels";
 import { fetchChannelVideos } from "@/lib/youtube/videos";
 import { downloadImage } from "@/lib/images";
 
 export async function POST(request: Request) {
   try {
-    await ensureTables();
+    ensureTables();
     const body = await request.json().catch(() => ({}));
     const utcOffset: number = typeof body.utcOffset === "number" ? body.utcOffset : 0;
     console.log("[sync] Starting sync, utcOffset:", utcOffset);
-    const { rows: channels } = await pool.query("SELECT * FROM channels");
+    const channels = query("SELECT * FROM channels");
     console.log("[sync] Channels found:", channels.length);
 
     if (channels.length === 0) {
@@ -26,21 +26,23 @@ export async function POST(request: Request) {
     for (const channel of channels) {
       try {
         console.log("[sync] Processing channel:", channel.id, channel.name);
-        // Get uploads playlist ID
-        const info = await fetchChannelInfo(channel.id);
+        const info = await fetchChannelInfo(channel.id as string);
         console.log("[sync] Channel info:", info.name, "uploads:", info.uploads_playlist_id);
-        const videos = await fetchChannelVideos(info.uploads_playlist_id, 50, channel.id);
+        const videos = await fetchChannelVideos(info.uploads_playlist_id, 50, channel.id as string);
         console.log("[sync] Videos fetched:", videos.length);
 
+        // Get existing video IDs for this channel to detect new vs updated
+        const existingVideos = new Set(
+          query<{ id: string }>("SELECT id FROM videos WHERE channel_id = ?", [channel.id])
+            .map((v) => v.id)
+        );
         let newCount = 0;
 
         for (const video of videos) {
-          // Convert published_at from UTC to local time using the user's offset
           const utcDate = new Date(video.published_at);
           const localMs = utcDate.getTime() + utcOffset * 3600000;
           const localPublishedAt = new Date(localMs).toISOString();
 
-          // For scheduled videos, use scheduled_at as the calendar date
           let localScheduledAt: string | null = null;
           if (video.scheduled_at) {
             const utcScheduled = new Date(video.scheduled_at);
@@ -48,10 +50,8 @@ export async function POST(request: Request) {
             localScheduledAt = new Date(localScheduledMs).toISOString();
           }
 
-          // If video is scheduled, use scheduled_at as published_at for calendar placement
           const calendarDate = localScheduledAt || localPublishedAt;
 
-          // Download thumbnail locally (fallback to remote URL on failure)
           let thumbnailUrl = video.thumbnail_url;
           if (video.thumbnail_url) {
             const localThumb = await downloadImage(
@@ -62,21 +62,20 @@ export async function POST(request: Request) {
           }
 
           // Upsert video
-          const res = await pool.query(
+          const result = run(
             `INSERT INTO videos (id, channel_id, title, thumbnail_url, published_at, scheduled_at, duration, view_count, like_count, comment_count, description, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT (id) DO UPDATE SET
-               title = EXCLUDED.title,
-               thumbnail_url = EXCLUDED.thumbnail_url,
-               published_at = EXCLUDED.published_at,
-               scheduled_at = EXCLUDED.scheduled_at,
-               duration = EXCLUDED.duration,
-               view_count = EXCLUDED.view_count,
-               like_count = EXCLUDED.like_count,
-               comment_count = EXCLUDED.comment_count,
-               description = EXCLUDED.description,
-               status = EXCLUDED.status
-             RETURNING (xmax = 0) as is_new`,
+               title = excluded.title,
+               thumbnail_url = excluded.thumbnail_url,
+               published_at = excluded.published_at,
+               scheduled_at = excluded.scheduled_at,
+               duration = excluded.duration,
+               view_count = excluded.view_count,
+               like_count = excluded.like_count,
+               comment_count = excluded.comment_count,
+               description = excluded.description,
+               status = excluded.status`,
             [
               video.id,
               channel.id,
@@ -93,19 +92,22 @@ export async function POST(request: Request) {
             ]
           );
 
-          if (res.rows[0]?.is_new) newCount++;
+          if (!existingVideos.has(video.id)) {
+            newCount++;
+          }
         }
 
         // Remove videos that no longer exist on YouTube
         if (videos.length > 0) {
           const fetchedIds = videos.map((v) => v.id);
-          await pool.query(
-            `DELETE FROM videos WHERE channel_id = $1 AND id != ALL($2::text[])`,
-            [channel.id, fetchedIds]
+          const placeholders = fetchedIds.map(() => "?").join(", ");
+          run(
+            `DELETE FROM videos WHERE channel_id = ? AND id NOT IN (${placeholders})`,
+            [channel.id, ...fetchedIds]
           );
         }
 
-        // Download channel avatar locally (fallback to remote URL on failure)
+        // Download channel avatar locally
         const localAvatar = await downloadImage(
           info.avatar_url,
           `images/avatars/${channel.id}.jpg`
@@ -113,21 +115,15 @@ export async function POST(request: Request) {
         const avatarUrl = localAvatar || info.avatar_url;
 
         // Update channel info
-        await pool.query(
-          `UPDATE channels SET name = $1, handle = $2, avatar_url = $3, subscriber_count = $4, updated_at = NOW()
-           WHERE id = $5`,
-          [
-            info.name,
-            info.handle,
-            avatarUrl,
-            info.subscriber_count,
-            channel.id,
-          ]
+        run(
+          `UPDATE channels SET name = ?, handle = ?, avatar_url = ?, subscriber_count = ?, updated_at = datetime('now')
+           WHERE id = ?`,
+          [info.name, info.handle, avatarUrl, info.subscriber_count, channel.id]
         );
 
         // Log sync
-        await pool.query(
-          `INSERT INTO sync_log (channel_id, videos_fetched, status) VALUES ($1, $2, 'success')`,
+        run(
+          `INSERT INTO sync_log (channel_id, videos_fetched, status) VALUES (?, ?, 'success')`,
           [channel.id, videos.length]
         );
 
@@ -141,8 +137,8 @@ export async function POST(request: Request) {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         console.error("[sync] Error syncing channel:", channel.id, message, err);
-        await pool.query(
-          `INSERT INTO sync_log (channel_id, status, error_message) VALUES ($1, 'error', $2)`,
+        run(
+          `INSERT INTO sync_log (channel_id, status, error_message) VALUES (?, 'error', ?)`,
           [channel.id, message]
         );
         results.push({
@@ -164,8 +160,8 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  await ensureTables();
-  const { rows } = await pool.query(
+  ensureTables();
+  const rows = query(
     "SELECT synced_at FROM sync_log ORDER BY synced_at DESC LIMIT 1"
   );
   return NextResponse.json({

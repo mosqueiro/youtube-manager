@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { query, run } from "@/lib/db";
 
 export async function PATCH(
   req: NextRequest,
@@ -10,14 +10,13 @@ export async function PATCH(
 
   const fields: string[] = [];
   const values: unknown[] = [];
-  let idx = 1;
 
   if (body.videos_per_day !== undefined) {
-    fields.push(`videos_per_day = $${idx++}`);
+    fields.push(`videos_per_day = ?`);
     values.push(body.videos_per_day);
   }
   if (body.color !== undefined) {
-    fields.push(`color = $${idx++}`);
+    fields.push(`color = ?`);
     values.push(body.color);
   }
 
@@ -26,11 +25,12 @@ export async function PATCH(
   }
 
   values.push(channelId);
-  const { rows } = await pool.query(
-    `UPDATE channels SET ${fields.join(", ")}, updated_at = NOW() WHERE id = $${idx} RETURNING *`,
+  run(
+    `UPDATE channels SET ${fields.join(", ")}, updated_at = datetime('now') WHERE id = ?`,
     values
   );
 
+  const rows = query("SELECT * FROM channels WHERE id = ?", [channelId]);
   if (rows.length === 0) {
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
   }
@@ -44,12 +44,9 @@ export async function DELETE(
 ) {
   const { channelId } = await params;
 
-  const result = await pool.query(
-    "DELETE FROM channels WHERE id = $1 RETURNING id",
-    [channelId]
-  );
+  const result = run("DELETE FROM channels WHERE id = ?", [channelId]);
 
-  if (result.rows.length === 0) {
+  if (result.changes === 0) {
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
   }
 

@@ -27,6 +27,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Persistent directories: SQLite database + downloaded images
+RUN mkdir -p /app/data /app/public/images && \
+    chown -R nextjs:nodejs /app/data /app/public/images
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000

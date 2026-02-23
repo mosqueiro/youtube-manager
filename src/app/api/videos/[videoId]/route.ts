@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { run } from "@/lib/db";
 
 export async function PATCH(
   req: NextRequest,
@@ -15,7 +15,7 @@ export async function PATCH(
     );
   }
 
-  await pool.query("UPDATE videos SET published_at = $1 WHERE id = $2", [
+  run("UPDATE videos SET published_at = ? WHERE id = ?", [
     body.published_at,
     videoId,
   ]);

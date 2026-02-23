@@ -4,7 +4,7 @@ import { getAuthenticatedClient, isOAuthConfigured } from "@/lib/youtube/oauth";
 import { google } from "googleapis";
 
 export async function GET(req: NextRequest) {
-  await ensureTables();
+  ensureTables();
 
   const channelId = req.nextUrl.searchParams.get("channelId");
   if (!channelId) {
@@ -20,7 +20,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ configured: true, connected: false });
   }
 
-  // Verify the token still works
   try {
     const youtube = google.youtube({ version: "v3", auth });
     const res = await youtube.channels.list({

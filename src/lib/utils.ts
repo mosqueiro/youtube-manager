@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import { Locale } from "@/lib/i18n";
 
 export function cn(...inputs: ClassValue[]) {
   return inputs.filter(Boolean).join(" ");
@@ -38,12 +39,15 @@ export function extractChannelId(input: string): string {
 
 /**
  * Format a time string from a DB timestamp (already in local time).
- * Returns "h:mm AM/PM".
+ * pt-BR → "HH:mm" (24h), en → "h:mm AM/PM" (12h).
  */
-export function formatTime(dateStr: string | Date): string {
+export function formatTime(dateStr: string | Date, locale: Locale = "en"): string {
   const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
   const hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, "0");
+  if (locale === "pt-BR") {
+    return `${String(hours).padStart(2, "0")}:${minutes}`;
+  }
   const ampm = hours >= 12 ? "PM" : "AM";
   const h12 = hours % 12 || 12;
   return `${h12}:${minutes} ${ampm}`;

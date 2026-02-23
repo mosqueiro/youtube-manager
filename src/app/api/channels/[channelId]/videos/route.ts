@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { query } from "@/lib/db";
 
 export async function GET(
   _req: NextRequest,
@@ -7,11 +7,11 @@ export async function GET(
 ) {
   const { channelId } = await params;
 
-  const { rows } = await pool.query(
+  const rows = query(
     `SELECT v.*, c.name as channel_name, c.color as channel_color, c.avatar_url as channel_avatar
      FROM videos v
      JOIN channels c ON v.channel_id = c.id
-     WHERE v.channel_id = $1
+     WHERE v.channel_id = ?
      ORDER BY v.published_at DESC
      LIMIT 50`,
     [channelId]

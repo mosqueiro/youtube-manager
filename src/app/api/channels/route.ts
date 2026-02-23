@@ -1,69 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool, { ensureTables } from "@/lib/db";
+import { ensureTables, query, run } from "@/lib/db";
 import { resolveChannelId, fetchChannelInfo } from "@/lib/youtube/channels";
 import { CHANNEL_COLORS } from "@/lib/constants";
 import { downloadImage } from "@/lib/images";
 
 export async function GET() {
-  await ensureTables();
-  const { rows } = await pool.query(
-    "SELECT * FROM channels ORDER BY created_at ASC"
-  );
+  ensureTables();
+  const rows = query("SELECT * FROM channels ORDER BY created_at ASC");
   return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest) {
-  await ensureTables();
+  ensureTables();
   const { input } = await req.json();
   if (!input) {
     return NextResponse.json({ error: "Input is required" }, { status: 400 });
   }
 
   try {
-    // Resolve channel ID from handle/URL/ID
     const channelId = await resolveChannelId(input);
 
-    // Check if already exists
-    const existing = await pool.query("SELECT id FROM channels WHERE id = $1", [
-      channelId,
-    ]);
-    if (existing.rows.length > 0) {
+    const existing = query("SELECT id FROM channels WHERE id = ?", [channelId]);
+    if (existing.length > 0) {
       return NextResponse.json(
         { error: "Channel already added" },
         { status: 409 }
       );
     }
 
-    // Fetch channel info from YouTube
     const info = await fetchChannelInfo(channelId);
 
-    // Download channel avatar locally (fallback to remote URL on failure)
     const localAvatar = await downloadImage(
       info.avatar_url,
       `images/avatars/${info.id}.jpg`
     );
     const avatarUrl = localAvatar || info.avatar_url;
 
-    // Assign color based on current channel count
-    const countRes = await pool.query("SELECT COUNT(*) FROM channels");
-    const colorIndex = parseInt(countRes.rows[0].count) % CHANNEL_COLORS.length;
+    const countRes = query<{ cnt: number }>("SELECT COUNT(*) as cnt FROM channels");
+    const colorIndex = countRes[0].cnt % CHANNEL_COLORS.length;
     const color = CHANNEL_COLORS[colorIndex];
 
-    // Insert into DB
-    const { rows } = await pool.query(
+    run(
       `INSERT INTO channels (id, name, handle, avatar_url, subscriber_count, color)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [
-        info.id,
-        info.name,
-        info.handle,
-        avatarUrl,
-        info.subscriber_count,
-        color,
-      ]
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [info.id, info.name, info.handle, avatarUrl, info.subscriber_count, color]
     );
 
+    const rows = query("SELECT * FROM channels WHERE id = ?", [info.id]);
     return NextResponse.json(rows[0], { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

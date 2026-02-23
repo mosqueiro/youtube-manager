@@ -1,64 +1,71 @@
-const { Pool } = require("pg");
+const Database = require("better-sqlite3");
+const path = require("path");
+const fs = require("fs");
 
-const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    "postgresql://postgres:postgres@localhost:5435/youtube_manager",
-});
+const DB_PATH = path.join(__dirname, "..", "data", "youtube-manager.db");
 
-async function initdb() {
-  const client = await pool.connect();
-  try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS channels (
-        id VARCHAR(30) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        handle VARCHAR(100),
-        avatar_url TEXT,
-        subscriber_count BIGINT,
-        color VARCHAR(7) NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS videos (
-        id VARCHAR(20) PRIMARY KEY,
-        channel_id VARCHAR(30) REFERENCES channels(id) ON DELETE CASCADE,
-        title VARCHAR(500) NOT NULL,
-        thumbnail_url TEXT,
-        published_at TIMESTAMP NOT NULL,
-        duration VARCHAR(20),
-        view_count BIGINT DEFAULT 0,
-        description TEXT,
-        status VARCHAR(20) DEFAULT 'public',
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS sync_log (
-        id SERIAL PRIMARY KEY,
-        channel_id VARCHAR(30) REFERENCES channels(id) ON DELETE CASCADE,
-        synced_at TIMESTAMP DEFAULT NOW(),
-        videos_fetched INTEGER DEFAULT 0,
-        status VARCHAR(20) DEFAULT 'success',
-        error_message TEXT
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_videos_channel_id ON videos(channel_id);
-      CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos(published_at);
-      CREATE INDEX IF NOT EXISTS idx_sync_log_channel_id ON sync_log(channel_id);
-
-      -- Migration: add videos_per_day to channels
-      ALTER TABLE channels ADD COLUMN IF NOT EXISTS videos_per_day INTEGER DEFAULT 1;
-    `);
-
-    console.log("✓ Database tables created successfully");
-  } catch (err) {
-    console.error("✗ Error creating tables:", err.message);
-    process.exit(1);
-  } finally {
-    client.release();
-    await pool.end();
-  }
+const dir = path.dirname(DB_PATH);
+if (!fs.existsSync(dir)) {
+  fs.mkdirSync(dir, { recursive: true });
 }
 
-initdb();
+const db = new Database(DB_PATH);
+db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
+
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS channels (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      handle TEXT,
+      avatar_url TEXT,
+      subscriber_count INTEGER,
+      color TEXT NOT NULL,
+      videos_per_day INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS videos (
+      id TEXT PRIMARY KEY,
+      channel_id TEXT REFERENCES channels(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      thumbnail_url TEXT,
+      published_at TEXT NOT NULL,
+      duration TEXT,
+      view_count INTEGER DEFAULT 0,
+      like_count INTEGER DEFAULT 0,
+      comment_count INTEGER DEFAULT 0,
+      scheduled_at TEXT,
+      description TEXT,
+      status TEXT DEFAULT 'public',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS sync_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      channel_id TEXT REFERENCES channels(id) ON DELETE CASCADE,
+      synced_at TEXT DEFAULT (datetime('now')),
+      videos_fetched INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'success',
+      error_message TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_videos_channel_id ON videos(channel_id);
+    CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos(published_at);
+    CREATE INDEX IF NOT EXISTS idx_sync_log_channel_id ON sync_log(channel_id);
+  `);
+
+  console.log("✓ Database tables created successfully at", DB_PATH);
+} catch (err) {
+  console.error("✗ Error creating tables:", err.message);
+  process.exit(1);
+} finally {
+  db.close();
+}

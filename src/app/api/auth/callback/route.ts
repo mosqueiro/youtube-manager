@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool, { ensureTables } from "@/lib/db";
+import { ensureTables, run } from "@/lib/db";
 import { exchangeCodeForTokens } from "@/lib/youtube/oauth";
 
 export async function GET(req: NextRequest) {
@@ -14,13 +14,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    await ensureTables();
+    ensureTables();
     const tokens = await exchangeCodeForTokens(code);
 
     if (tokens.refresh_token) {
-      await pool.query(
-        `INSERT INTO settings (key, value) VALUES ($1, $2)
-         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      run(
+        `INSERT INTO settings (key, value) VALUES (?, ?)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
         [`google_refresh_token:${channelId}`, tokens.refresh_token]
       );
       console.log(`[oauth] Refresh token saved for channel ${channelId}`);
