@@ -115,6 +115,7 @@ export default function SetupPage() {
             <li>{tr("setup.step2")}</li>
             <li>{tr("setup.step3")}</li>
             <li>{tr("setup.step4")}</li>
+            <li>{tr("setup.step5")}</li>
           </ol>
           <a
             href="https://console.cloud.google.com/apis/credentials"

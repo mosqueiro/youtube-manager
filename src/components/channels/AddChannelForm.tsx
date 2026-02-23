@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Plus, Loader2, Settings } from "lucide-react";
+import { Plus, Loader2, LogIn } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface AddChannelFormProps {
@@ -69,13 +68,13 @@ export function AddChannelForm({ onAdd }: AddChannelFormProps) {
               {t("channel.needsOAuthHint")}
             </p>
           </div>
-          <Link
-            href="/settings"
+          <a
+            href="/api/auth/login?channelId=_initial"
             className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-600"
           >
-            <Settings className="h-3.5 w-3.5" />
-            {t("channel.goToSettings")}
-          </Link>
+            <LogIn className="h-3.5 w-3.5" />
+            {t("settings.connectGoogle")}
+          </a>
         </div>
       )}
       {error && (

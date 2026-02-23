@@ -51,8 +51,7 @@ const translations = {
     "channel.add": "Add",
     "channel.addError": "Failed to add channel",
     "channel.needsOAuth": "Google account not connected yet",
-    "channel.needsOAuthHint": "Connect your Google account first so the app can fetch channel data.",
-    "channel.goToSettings": "Go to Settings",
+    "channel.needsOAuthHint": "Connect your Google account so the app can fetch channel data.",
 
     // Sync
     "sync.sync": "Sync",
@@ -98,10 +97,11 @@ const translations = {
     "setup.clientSecret": "Google Client Secret",
     "setup.save": "Save & Enter",
     "setup.howToGet": "How to get your credentials",
-    "setup.step1": "Go to Google Cloud Console → Credentials",
-    "setup.step2": "Create an OAuth 2.0 Client ID (Web application)",
-    "setup.step3": "Add http://localhost:3000/api/auth/callback as redirect URI",
-    "setup.step4": "Copy the Client ID and Client Secret here",
+    "setup.step1": "Go to Google Cloud Console and create a project",
+    "setup.step2": "Enable the YouTube Data API v3",
+    "setup.step3": "Create an OAuth 2.0 Client ID (Web application)",
+    "setup.step4": "Add http://localhost:3000/api/auth/callback as redirect URI",
+    "setup.step5": "Copy the Client ID and Client Secret here",
   },
   "pt-BR": {
     // Sidebar
@@ -153,8 +153,7 @@ const translations = {
     "channel.add": "Adicionar",
     "channel.addError": "Falha ao adicionar canal",
     "channel.needsOAuth": "Conta Google ainda não conectada",
-    "channel.needsOAuthHint": "Conecte sua conta Google primeiro para o app buscar os dados do canal.",
-    "channel.goToSettings": "Ir para Configurações",
+    "channel.needsOAuthHint": "Conecte sua conta Google para o app buscar os dados do canal.",
 
     // Sync
     "sync.sync": "Sincronizar",
@@ -200,10 +199,11 @@ const translations = {
     "setup.clientSecret": "Google Client Secret",
     "setup.save": "Salvar e Entrar",
     "setup.howToGet": "Como obter suas credenciais",
-    "setup.step1": "Acesse Google Cloud Console → Credenciais",
-    "setup.step2": "Crie um ID de cliente OAuth 2.0 (Aplicativo Web)",
-    "setup.step3": "Adicione http://localhost:3000/api/auth/callback como URI de redirecionamento",
-    "setup.step4": "Copie o Client ID e Client Secret aqui",
+    "setup.step1": "Acesse Google Cloud Console e crie um projeto",
+    "setup.step2": "Ative a YouTube Data API v3",
+    "setup.step3": "Crie um ID de cliente OAuth 2.0 (Aplicativo Web)",
+    "setup.step4": "Adicione http://localhost:3000/api/auth/callback como URI de redirecionamento",
+    "setup.step5": "Copie o Client ID e Client Secret aqui",
   },
 } as const;
 
