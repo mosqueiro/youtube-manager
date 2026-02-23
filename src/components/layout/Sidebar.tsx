@@ -84,7 +84,7 @@ export function Sidebar() {
           </p>
         </div>
         <p className="mt-2 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
-          v0.0.6
+          v{process.env.APP_VERSION}
         </p>
       </div>
     </aside>

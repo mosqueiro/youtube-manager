@@ -127,6 +127,10 @@ export default function SetupPage() {
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
+
+        <p className="mt-4 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
+          v{process.env.APP_VERSION}
+        </p>
       </div>
     </div>
   );
