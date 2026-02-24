@@ -146,6 +146,24 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
                           ? new Date(sorted[sorted.length - 1].published_at)
                           : null;
 
+                        // Find the last video from the previous day for this channel
+                        let prevDayGap = 0;
+                        if (sorted.length > 0) {
+                          // Search backwards through previous days
+                          for (let pi = i - 1; pi >= 0; pi--) {
+                            const prevDayVideos = days[pi].videos
+                              .filter((v) => v.channel_id === channel.id)
+                              .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+                            if (prevDayVideos.length > 0) {
+                              prevDayGap = differenceInMinutes(
+                                new Date(sorted[0].published_at),
+                                new Date(prevDayVideos[0].published_at)
+                              );
+                              break;
+                            }
+                          }
+                        }
+
                         return (
                           <>
                             {sorted.map((video, vi) => {
@@ -158,6 +176,17 @@ export function WeekView({ days, channels, onVideoClick }: WeekViewProps) {
 
                               return (
                                 <div key={video.id}>
+                                  {/* Gap from previous day's last video */}
+                                  {vi === 0 && prevDayGap > 0 && (
+                                    <div className="flex items-center gap-1.5 px-2 py-1">
+                                      <div className="h-px flex-1 bg-neutral-200 dark:bg-[#3f3f3f]" />
+                                      <span className="flex items-center gap-1 text-[11px] font-bold tabular-nums text-neutral-500 dark:text-neutral-400">
+                                        <Timer className="h-3 w-3" />
+                                        {formatGap(prevDayGap)}
+                                      </span>
+                                      <div className="h-px flex-1 bg-neutral-200 dark:bg-[#3f3f3f]" />
+                                    </div>
+                                  )}
                                   {/* Gap indicator between videos */}
                                   {vi > 0 && gap > 0 && (
                                     <div className="flex items-center gap-1.5 px-2 py-1">
